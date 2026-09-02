@@ -4,6 +4,8 @@
 
 ![DocEdit Pro Banner](assets/banner.png)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-DocEdit%20Pro-6366f1?style=for-the-badge&logo=githubpages&logoColor=white)](https://techyshahid.github.io/ImageOCR/)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-indigo.svg)](LICENSE)
 [![OCR: Tesseract.js](https://img.shields.io/badge/OCR-Tesseract.js%20v5-blue.svg)](https://github.com/naptha/tesseract.js)
 [![PDF: PDF.js & PDF--Lib](https://img.shields.io/badge/PDF-PDF.js%20%7C%20PDF--Lib-orange.svg)](https://pdf-lib.js.org/)
@@ -12,7 +14,7 @@
 
 **DocEdit Pro** is an open-source, client-side web application for in-browser OCR, direct text editing, and document export for PDFs and images (PNG, JPEG, WebP). It automatically analyzes and replicates the original document's typography, font size, text color, and background color for edits.
 
-[Features](#-key-features) • [Architecture](#-architecture--pipeline) • [How It Works](#-how-it-works) • [Getting Started](#-getting-started) • [Shortcuts](#-keyboard-shortcuts) • [Privacy](#-privacy--security)
+[🚀 **Try Live Demo**](https://techyshahid.github.io/ImageOCR/) • [Features](#-key-features) • [Architecture](#-architecture--pipeline) • [How It Works](#-how-it-works) • [Getting Started](#-getting-started) • [Shortcuts](#-keyboard-shortcuts) • [Privacy](#-privacy--security)
 
 </div>
 
