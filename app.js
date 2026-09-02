@@ -115,6 +115,9 @@ const DOM = {
 // Initialization
 // ============================================================
 function init() {
+  if (window.innerWidth <= 768) {
+    closeSidePanel();
+  }
   bindUploadEvents();
   bindToolbarEvents();
   bindKeyboardShortcuts();
@@ -175,6 +178,11 @@ async function handleFile(file) {
   state.redoStack = [];
   state.currentPage = 1;
   state.zoom = 1;
+
+  // On mobile, ensure side panel is closed by default to give full screen to canvas
+  if (window.innerWidth <= 768) {
+    closeSidePanel();
+  }
 
   // Update UI
   DOM.fileName.textContent = file.name;
@@ -1064,10 +1072,16 @@ function zoomOut() {
 }
 
 function zoomFit() {
-  const vpPadding = window.innerWidth <= 768 ? 20 : 48;
-  const vpWidth = Math.max(100, DOM.canvasViewport.clientWidth - vpPadding);
-  const fitZoom = vpWidth / state.baseWidth;
-  state.zoom = Math.max(0.2, Math.min(3, fitZoom));
+  if (!state.baseWidth || state.baseWidth <= 0) return;
+  const isMobile = window.innerWidth <= 768;
+  const vpPadding = isMobile ? 24 : 48;
+  let vpWidth = DOM.canvasViewport.clientWidth;
+  if (!vpWidth || vpWidth < 100) {
+    vpWidth = window.innerWidth;
+  }
+  const availableWidth = Math.max(100, vpWidth - vpPadding);
+  const fitZoom = availableWidth / state.baseWidth;
+  state.zoom = Math.max(0.15, Math.min(3, fitZoom));
   applyZoom();
 }
 

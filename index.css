@@ -401,7 +401,10 @@ body {
 .editor-screen {
   display: none;
   flex: 1;
+  flex-direction: column;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
 }
 
 .editor-screen.active {
@@ -420,6 +423,7 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .toolbar-group {
@@ -464,29 +468,36 @@ body {
 .editor-body {
   display: flex;
   flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .canvas-viewport {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: var(--space-lg);
+  padding: var(--space-md);
   background:
     radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
     var(--bg-primary);
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  text-align: center;
 }
 
 .canvas-container {
   position: relative;
+  display: inline-block;
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  flex-shrink: 0;
+  margin: 0 auto;
+  vertical-align: top;
 }
 
 .canvas-container canvas {
