@@ -689,7 +689,7 @@ input[type="range"] {
 .receipt-paper {
   background-color: var(--receipt-bg);
   color: var(--receipt-text);
-  padding: 16px 20px 20px 20px;
+  padding: 16px 20px 20px calc(20px + 1ch);
   min-height: 480px;
   font-size: 13px;
   line-height: 1.42;
@@ -923,6 +923,6 @@ input[type="range"] {
   .receipt-paper {
     background: #fff !important;
     color: #000 !important;
-    padding: 10px !important;
+    padding: 10px 10px 10px calc(10px + 1ch) !important;
   }
 }
