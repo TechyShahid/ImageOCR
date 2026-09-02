@@ -98,6 +98,7 @@ const DOM = {
   btnRedo: $('#btnRedo'),
   btnTogglePanel: $('#btnTogglePanel'),
   btnClosePanel: $('#btnClosePanel'),
+  sidePanelBackdrop: $('#sidePanelBackdrop'),
 
   // Loading
   loadingOverlay: $('#loadingOverlay'),
@@ -274,8 +275,12 @@ async function renderPage(pageNum) {
   // Run OCR on this page
   await runOCR(canvas, pageNum);
 
-  // Apply zoom
-  applyZoom();
+  // Apply zoom (auto fit to width on mobile)
+  if (window.innerWidth <= 768) {
+    zoomFit();
+  } else {
+    applyZoom();
+  }
 }
 
 // ============================================================
@@ -317,7 +322,11 @@ async function loadImage() {
       // Run OCR
       await runOCR(canvas, 1);
 
-      applyZoom();
+      if (window.innerWidth <= 768) {
+        zoomFit();
+      } else {
+        applyZoom();
+      }
       resolve();
     };
 
@@ -1055,9 +1064,10 @@ function zoomOut() {
 }
 
 function zoomFit() {
-  const vpWidth = DOM.canvasViewport.clientWidth - 48;
+  const vpPadding = window.innerWidth <= 768 ? 20 : 48;
+  const vpWidth = Math.max(100, DOM.canvasViewport.clientWidth - vpPadding);
   const fitZoom = vpWidth / state.baseWidth;
-  state.zoom = Math.max(0.25, Math.min(3, fitZoom));
+  state.zoom = Math.max(0.2, Math.min(3, fitZoom));
   applyZoom();
 }
 
@@ -1114,7 +1124,11 @@ async function renderPageFromCache(pageNum) {
 
   DOM.wordCount.textContent = `${state.words.length} words`;
 
-  applyZoom();
+  if (window.innerWidth <= 768) {
+    zoomFit();
+  } else {
+    applyZoom();
+  }
   updateProgress(100);
   setTimeout(() => hideLoading(), 200);
 }
@@ -1409,9 +1423,12 @@ function bindToolbarEvents() {
   DOM.btnSave.addEventListener('click', saveFile);
 
   DOM.btnTogglePanel.addEventListener('click', toggleSidePanel);
-  DOM.btnClosePanel.addEventListener('click', () => DOM.sidePanel.classList.add('collapsed'));
+  DOM.btnClosePanel.addEventListener('click', closeSidePanel);
+  if (DOM.sidePanelBackdrop) {
+    DOM.sidePanelBackdrop.addEventListener('click', closeSidePanel);
+  }
 
-  // Zoom with scroll
+  // Zoom with scroll (Desktop)
   DOM.canvasViewport.addEventListener('wheel', (e) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -1419,10 +1436,59 @@ function bindToolbarEvents() {
       else zoomOut();
     }
   }, { passive: false });
+
+  // Touch Gestures: Pinch-to-Zoom (Mobile & Tablets)
+  let initialPinchDistance = null;
+  let initialZoom = 1;
+
+  DOM.canvasViewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      initialPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialZoom = state.zoom;
+    }
+  }, { passive: true });
+
+  DOM.canvasViewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && initialPinchDistance !== null) {
+      const currentDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDistance / initialPinchDistance;
+      state.zoom = Math.max(0.2, Math.min(3, initialZoom * factor));
+      applyZoom();
+    }
+  }, { passive: true });
+
+  DOM.canvasViewport.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      initialPinchDistance = null;
+    }
+  }, { passive: true });
+
+  // Resize handler for responsive zoom
+  window.addEventListener('resize', () => {
+    if (state.file && window.innerWidth <= 768) {
+      zoomFit();
+    }
+  });
 }
 
 function toggleSidePanel() {
-  DOM.sidePanel.classList.toggle('collapsed');
+  const isCollapsed = DOM.sidePanel.classList.toggle('collapsed');
+  if (DOM.sidePanelBackdrop) {
+    DOM.sidePanelBackdrop.classList.toggle('active', !isCollapsed);
+  }
+}
+
+function closeSidePanel() {
+  DOM.sidePanel.classList.add('collapsed');
+  if (DOM.sidePanelBackdrop) {
+    DOM.sidePanelBackdrop.classList.remove('active');
+  }
 }
 
 // ============================================================

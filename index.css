@@ -859,31 +859,203 @@ body {
   white-space: nowrap;
 }
 
-/* ===== Responsive ===== */
+/* ===== Responsive Design ===== */
+
+/* Tablet & Smaller Laptops (<= 1024px) */
 @media (max-width: 1024px) {
   :root {
-    --sidebar-width: 300px;
+    --sidebar-width: 320px;
+  }
+
+  .app-header {
+    padding: 0 var(--space-md);
   }
 }
 
+/* Tablets & Mobile Devices (<= 768px) */
 @media (max-width: 768px) {
+  :root {
+    --header-height: 56px;
+    --toolbar-height: 44px;
+    --sidebar-width: 85vw;
+  }
+
+  .app-header {
+    padding: 0 var(--space-sm);
+  }
+
+  .app-logo h1 {
+    font-size: 1rem;
+  }
+
+  .app-logo .logo-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+
+  .file-info {
+    max-width: 130px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+  }
+
+  .btn-save-text {
+    display: none;
+  }
+
+  .btn-save-text-mobile {
+    display: inline !important;
+  }
+
+  /* Upload Screen on Mobile */
+  .upload-zone {
+    width: 100%;
+    max-width: 92vw;
+    padding: var(--space-xl) var(--space-md);
+    border-radius: var(--radius-lg);
+  }
+
+  .upload-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: var(--space-md);
+  }
+
+  .upload-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .upload-title {
+    font-size: 1.15rem;
+  }
+
+  .upload-subtitle {
+    font-size: 0.82rem;
+  }
+
+  .upload-formats {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .format-tag {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  /* Toolbar on Mobile (Smooth Horizontal Scroll) */
+  .editor-toolbar {
+    padding: 0 var(--space-xs);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .editor-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolbar-group {
+    flex-shrink: 0;
+  }
+
+  .toolbar-divider {
+    margin: 0 4px;
+  }
+
+  /* Canvas Viewport */
+  .canvas-viewport {
+    padding: 8px;
+  }
+
+  /* Side Panel as Drawer */
   .side-panel {
-    position: absolute;
+    position: fixed;
     right: 0;
     top: 0;
     bottom: 0;
-    z-index: 60;
-    width: 100%;
-    max-width: var(--sidebar-width);
+    z-index: 150;
+    width: var(--sidebar-width);
+    max-width: 380px;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+    transform: translateX(0);
+    opacity: 1;
+    transition: transform var(--duration-normal) var(--ease-smooth);
   }
 
   .side-panel.collapsed {
     transform: translateX(100%);
     width: var(--sidebar-width);
+    opacity: 1;
+    display: flex;
+    overflow: visible;
+  }
+
+  .side-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 26, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 140;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--duration-normal) var(--ease-smooth),
+                visibility var(--duration-normal) var(--ease-smooth);
+  }
+
+  .side-panel-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Loading Overlay on Mobile */
+  .loading-card {
+    min-width: 0;
+    width: 90vw;
+    max-width: 360px;
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  /* Toast on Mobile */
+  .toast-container {
+    top: calc(var(--header-height) + 8px);
+    left: 12px;
+    right: 12px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Extra Small Phones (<= 480px) */
+@media (max-width: 480px) {
+  .app-logo .badge {
+    display: none;
+  }
+
+  .file-info {
+    max-width: 90px;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .toolbar-label {
+    display: none;
   }
 
   .upload-zone {
-    padding: var(--space-xl);
+    padding: var(--space-lg) var(--space-sm);
   }
 }
 
