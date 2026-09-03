@@ -704,7 +704,7 @@ input[type="range"] {
   color: var(--receipt-text);
   padding: 14px 14px 18px 16px;
   min-height: 480px;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.38;
   letter-spacing: -0.01em;
   position: relative;
@@ -717,7 +717,7 @@ input[type="range"] {
 .font-spline-mono,
 .font-ubuntu-mono {
   font-family: 'Chivo Mono', monospace;
-  font-size: 15px;
+  font-size: 17px;
   letter-spacing: -0.01em;
   line-height: 1.38;
 }
@@ -733,7 +733,7 @@ input[type="range"] {
 
 .font-dot-matrix {
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: 0.03em;
 }
 
@@ -768,14 +768,14 @@ input[type="range"] {
 }
 
 .receipt-logo-svg {
-  width: 90px;
+  width: 180px;
   height: auto;
   display: block;
 }
 
 .receipt-logo-img {
-  max-width: 85px;
-  max-height: 95px;
+  max-width: 170px;
+  max-height: 190px;
   height: auto;
   display: block;
   margin: 0 auto;
@@ -785,7 +785,7 @@ input[type="range"] {
 
 .receipt-welcomes {
   text-align: center;
-  font-size: 21px;
+  font-size: 23px;
   letter-spacing: 0.03em;
   margin-top: 4px;
   margin-bottom: 6px;

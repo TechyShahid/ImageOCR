@@ -121,16 +121,16 @@
   // --- Logos Matching Real Thermal Receipts ---
   const LOGOS = {
     indianoil: `
-      <img src="assets/indianoil_logo.png?v=3" class="receipt-logo-img" alt="IndianOil" style="width: 105px; height: auto;">
+      <img src="assets/indianoil_logo.png?v=3" class="receipt-logo-img" alt="IndianOil" style="width: 170px; height: auto;">
     `,
     bharat: `
-      <img src="assets/bharat_petroleum_logo.png?v=3" class="receipt-logo-img" alt="Bharat Petroleum" style="width: 105px; height: auto;">
+      <img src="assets/bharat_petroleum_logo.png?v=3" class="receipt-logo-img" alt="Bharat Petroleum" style="width: 170px; height: auto;">
     `,
     hpcl: `
-      <img src="assets/hpcl_logo.png?v=3" class="receipt-logo-img" alt="Hindustan Petroleum" style="width: 105px; height: auto;">
+      <img src="assets/hpcl_logo.png?v=3" class="receipt-logo-img" alt="Hindustan Petroleum" style="width: 170px; height: auto;">
     `,
     custom: `
-      <svg viewBox="0 0 160 65" xmlns="http://www.w3.org/2000/svg" class="receipt-logo-svg" style="width: 120px; height: auto;">
+      <svg viewBox="0 0 160 65" xmlns="http://www.w3.org/2000/svg" class="receipt-logo-svg" style="width: 240px; height: auto;">
         <rect x="15" y="8" width="130" height="48" rx="4" fill="none" stroke="#111111" stroke-width="2.5"/>
         <text x="80" y="40" font-family="'Inter', Arial, sans-serif" font-size="17" font-weight="800" text-anchor="middle" fill="#111111">⛽ FUEL RECEIPT</text>
       </svg>
