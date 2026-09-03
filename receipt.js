@@ -666,17 +666,17 @@
       const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
 
-      // Calculate receipt dimensions in mm (standard 80mm POS width)
-      const pdfWidth = 80;
+      // Calculate receipt dimensions in mm (standard 58mm handheld POS width)
+      const pdfWidth = 58;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [pdfWidth, pdfHeight + 10]
+        format: [pdfWidth, pdfHeight + 6]
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 5, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, 3, pdfWidth, pdfHeight);
       
       const filename = `Fuel_Receipt_${currentTemplateKey.toUpperCase()}_${formatDDMMYY(elReceiptDate.value).replace(/\//g, '')}.pdf`;
       pdf.save(filename);

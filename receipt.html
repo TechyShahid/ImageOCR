@@ -7,8 +7,8 @@
   <title>Fuel Receipt Generator — IndianOil, BPCL, HPCL & More</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="receipt.css?v=5">
+  <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="receipt.css?v=13">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
 </head>
 <body>
@@ -411,7 +411,8 @@
                 <div class="input-group">
                   <label for="fontStyle">Printer Font Style</label>
                   <select id="fontStyle">
-                    <option value="space-mono" selected>Space Mono (Thermal POS Default)</option>
+                    <option value="chivo-mono" selected>POS Thermal (Clean Zero - Sample Match)</option>
+                    <option value="space-mono">Space Mono</option>
                     <option value="courier">Courier Prime (Typewriter/POS)</option>
                     <option value="dot-matrix">Dot Matrix / VT323</option>
                   </select>
@@ -487,7 +488,7 @@
           <div class="jagged-edge top" id="topJagged"></div>
 
           <!-- Receipt Paper Body -->
-          <div class="receipt-paper font-space-mono tone-authentic" id="receiptPaper">
+          <div class="receipt-paper font-chivo-mono tone-authentic" id="receiptPaper">
             
             <!-- BRAND LOGO AREA -->
             <div class="receipt-logo-container" id="receiptLogoArea">
@@ -577,7 +578,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- App Logic -->
-<script src="receipt.js?v=5"></script>
+<script src="receipt.js?v=6"></script>
 <!-- Analytics Tracker -->
 <script src="tracker.js" defer></script>
 

@@ -9,7 +9,7 @@
   --bg-card: #1c202d;
   --bg-input: #12141c;
   --bg-input-focus: #181b26;
-  
+
   --border-color: rgba(255, 255, 255, 0.08);
   --border-active: #6366f1;
   --border-hover: rgba(255, 255, 255, 0.16);
@@ -41,7 +41,9 @@
   --receipt-ink-opacity: 0.92;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -403,7 +405,7 @@ input[type="range"] {
   padding-left: 24px;
 }
 
-.input-prefix-wrapper .input-suffix ~ input,
+.input-prefix-wrapper .input-suffix~input,
 .input-prefix-wrapper input:has(+ .input-suffix) {
   padding-right: 26px;
 }
@@ -479,12 +481,12 @@ input[type="range"] {
   transition: all 0.15s ease;
 }
 
-.custom-checkbox input:checked ~ .checkmark {
+.custom-checkbox input:checked~.checkmark {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
 }
 
-.custom-checkbox input:checked ~ .checkmark::after {
+.custom-checkbox input:checked~.checkmark::after {
   content: "✓";
   font-size: 12px;
   color: #fff;
@@ -596,9 +598,20 @@ input[type="range"] {
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
 }
 
 .export-buttons {
@@ -650,7 +663,7 @@ input[type="range"] {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background-image: 
+  background-image:
     radial-gradient(circle at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%),
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
@@ -663,7 +676,7 @@ input[type="range"] {
 
 .receipt-wrapper {
   position: relative;
-  width: 330px;
+  width: 275px;
   filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.7));
   margin-bottom: 40px;
   transition: transform 0.2s ease;
@@ -689,10 +702,10 @@ input[type="range"] {
 .receipt-paper {
   background-color: var(--receipt-bg);
   color: var(--receipt-text);
-  padding: 16px 20px 20px calc(20px + 1ch);
+  padding: 14px 14px 18px 16px;
   min-height: 480px;
-  font-size: 13px;
-  line-height: 1.42;
+  font-size: 15px;
+  line-height: 1.38;
   letter-spacing: -0.01em;
   position: relative;
   user-select: text;
@@ -700,6 +713,15 @@ input[type="range"] {
 }
 
 /* Fonts */
+.font-chivo-mono,
+.font-spline-mono,
+.font-ubuntu-mono {
+  font-family: 'Chivo Mono', monospace;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  line-height: 1.38;
+}
+
 .font-space-mono {
   font-family: 'Space Mono', monospace;
   letter-spacing: -0.02em;
@@ -746,14 +768,14 @@ input[type="range"] {
 }
 
 .receipt-logo-svg {
-  width: 110px;
+  width: 90px;
   height: auto;
   display: block;
 }
 
 .receipt-logo-img {
-  max-width: 105px;
-  max-height: 115px;
+  max-width: 85px;
+  max-height: 95px;
   height: auto;
   display: block;
   margin: 0 auto;
@@ -763,30 +785,39 @@ input[type="range"] {
 
 .receipt-welcomes {
   text-align: center;
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-  font-weight: 500;
+  font-size: 21px;
+  letter-spacing: 0.03em;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  font-weight: 400;
+  transform: scaleX(0.82) scaleY(1.35);
+  transform-origin: center;
+  display: block;
+  line-height: 1.15;
 }
 
 /* Station Details */
 .receipt-station-info {
-  text-align: center;
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
 .r-dealer-name {
-  font-weight: 700;
+  text-align: left;
+  font-weight: 400;
   text-transform: uppercase;
 }
 
-.r-address-1, .r-address-2 {
+.r-address-1,
+.r-address-2 {
+  text-align: left;
   text-transform: uppercase;
 }
 
 .r-tel-no {
+  text-align: left;
   margin-top: 4px;
 }
 
@@ -863,12 +894,24 @@ input[type="range"] {
   animation: slideIn 0.2s ease;
 }
 
-.toast.success { border-left-color: var(--success); }
-.toast.error { border-left-color: var(--danger); }
+.toast.success {
+  border-left-color: var(--success);
+}
+
+.toast.error {
+  border-left-color: var(--danger);
+}
 
 @keyframes slideIn {
-  from { transform: translateX(30px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* ==========================================================================
@@ -917,12 +960,12 @@ input[type="range"] {
   .receipt-wrapper {
     margin: 0 auto !important;
     filter: none !important;
-    width: 80mm !important;
+    width: 58mm !important;
   }
 
   .receipt-paper {
     background: #fff !important;
     color: #000 !important;
-    padding: 10px 10px 10px calc(10px + 1ch) !important;
+    padding: 8px 8px 8px 10px !important;
   }
 }
