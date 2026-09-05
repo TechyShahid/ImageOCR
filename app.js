@@ -37,7 +37,8 @@ const state = {
   totalPages: 1,
 
   // Per-page data
-  pages: {},            // { pageNum: { canvas, words, originalImageData } }
+  pages: {},            // { pageNum: { canvas, words, originalImageData, cleanCanvas } }
+  cleanCanvas: null,    // Pristine offscreen canvas for current page
 
   // Current page OCR words
   words: [],            // [{ text, originalText, bbox, confidence, el, lineIndex }]
@@ -49,6 +50,9 @@ const state = {
   undoStack: [],
   redoStack: [],
 
+  // Active word tracking for font styling
+  activeWordIdx: null,
+
   // Zoom
   zoom: 1,
   baseWidth: 0,
@@ -56,6 +60,55 @@ const state = {
 
   // Image data
   originalImage: null,  // HTMLImageElement for image files
+
+  // Manual Add Text Mode
+  isAddingText: false,
+};
+
+// ============================================================
+// Font Family Definitions
+// ============================================================
+const FONT_FAMILIES = {
+  'sans-serif': {
+    name: 'Clean Sans (Arial / Standard)',
+    css: "Arial, Helvetica, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Liberation Sans', sans-serif",
+    type: 'sans-serif',
+  },
+  'inter': {
+    name: 'Inter (Modern Sans)',
+    css: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    type: 'sans-serif',
+  },
+  'pos-thermal': {
+    name: 'POS Thermal (Chivo Mono)',
+    css: "'Chivo Mono', 'Courier Prime', 'Space Mono', monospace",
+    type: 'monospace',
+  },
+  'space-mono': {
+    name: 'Space Mono (Receipt Numbers)',
+    css: "'Space Mono', 'Courier Prime', monospace",
+    type: 'monospace',
+  },
+  'courier': {
+    name: 'Courier Prime (Typewriter / POS)',
+    css: "'Courier Prime', 'Courier New', Courier, monospace",
+    type: 'monospace',
+  },
+  'dot-matrix': {
+    name: 'Dot Matrix / VT323',
+    css: "'VT323', 'Space Mono', monospace",
+    type: 'monospace',
+  },
+  'serif': {
+    name: 'Times New Roman (Serif)',
+    css: "'Times New Roman', Times, 'Liberation Serif', Georgia, serif",
+    type: 'serif',
+  },
+  'monospace': {
+    name: 'Consolas / Code Mono',
+    css: "Consolas, 'Liberation Mono', Menlo, Monaco, monospace",
+    type: 'monospace',
+  },
 };
 
 // ============================================================
@@ -100,6 +153,37 @@ const DOM = {
   btnClosePanel: $('#btnClosePanel'),
   sidePanelBackdrop: $('#sidePanelBackdrop'),
 
+  // Font Toolbar Group
+  fontToolbarGroup: $('#fontToolbarGroup'),
+  fontFamilySelect: $('#fontFamilySelect'),
+  btnFontSizeDec: $('#btnFontSizeDec'),
+  fontSizeInput: $('#fontSizeInput'),
+  btnFontSizeInc: $('#btnFontSizeInc'),
+  btnFontBold: $('#btnFontBold'),
+  btnFontItalic: $('#btnFontItalic'),
+  btnResetWordStyle: $('#btnResetWordStyle'),
+
+  // Shade / Darkness Controls
+  btnShadeDarker: $('#btnShadeDarker'),
+  inkShadeValue: $('#inkShadeValue'),
+  btnShadeLighter: $('#btnShadeLighter'),
+  textColorPicker: $('#textColorPicker'),
+  colorPickerSwatch: $('#colorPickerSwatch'),
+  btnAddText: $('#btnAddText'),
+
+  // Floating Quick Toolbar
+  floatingWordToolbar: $('#floatingWordToolbar'),
+  floatingFontSelect: $('#floatingFontSelect'),
+  floatingBtnDec: $('#floatingBtnDec'),
+  floatingSizeBadge: $('#floatingSizeBadge'),
+  floatingBtnInc: $('#floatingBtnInc'),
+  floatingBtnBold: $('#floatingBtnBold'),
+  floatingBtnItalic: $('#floatingBtnItalic'),
+  floatingBtnDarker: $('#floatingBtnDarker'),
+  floatingShadeBadge: $('#floatingShadeBadge'),
+  floatingBtnLighter: $('#floatingBtnLighter'),
+  floatingBtnReset: $('#floatingBtnReset'),
+
   // Loading
   loadingOverlay: $('#loadingOverlay'),
   loadingTitle: $('#loadingTitle'),
@@ -120,7 +204,39 @@ function init() {
   }
   bindUploadEvents();
   bindToolbarEvents();
+  bindFontToolbarEvents();
   bindKeyboardShortcuts();
+
+  window.loadDocFromUrl = async (url) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const filename = url.split('/').pop() || 'document.pdf';
+      const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
+      handleFile(file);
+    } catch (err) {
+      console.error('Failed to load doc from url:', err);
+    }
+  };
+
+  checkUrlParameters();
+}
+
+async function checkUrlParameters() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fileParam = params.get('file') || (params.get('demo') === 'true' ? 'sample_aadhaar.pdf' : null);
+    if (fileParam) {
+      const res = await fetch(fileParam);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const filename = fileParam.split('/').pop() || 'document.pdf';
+      const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
+      handleFile(file);
+    }
+  } catch (err) {
+    console.warn('Could not auto-load file param:', err);
+  }
 }
 
 // ============================================================
@@ -213,6 +329,7 @@ function resetToUpload() {
   state.undoStack = [];
   state.redoStack = [];
   state.originalImage = null;
+  state.cleanCanvas = null;
 
   // Reset UI
   DOM.uploadScreen.classList.remove('hidden');
@@ -237,7 +354,7 @@ async function loadPDF() {
   updateProgress(10);
 
   try {
-    const pdfData = new Uint8Array(state.fileBytes);
+    const pdfData = new Uint8Array(state.fileBytes.slice(0));
     state.pdfDoc = await window.pdfjsLib.getDocument({ data: pdfData }).promise;
     state.totalPages = state.pdfDoc.numPages;
 
@@ -277,8 +394,14 @@ async function renderPage(pageNum) {
   await page.render({ canvasContext: ctx, viewport }).promise;
   updateProgress(40);
 
-  // Store canvas image data for later use in saving
-  const imageData = canvas.toDataURL('image/png');
+  // Store pristine clean copy of the rendered page for seamless inpainting & undo
+  const clean = document.createElement('canvas');
+  clean.width = canvas.width;
+  clean.height = canvas.height;
+  clean.getContext('2d').drawImage(canvas, 0, 0);
+  state.cleanCanvas = clean;
+  if (!state.pages[pageNum]) state.pages[pageNum] = {};
+  state.pages[pageNum].cleanCanvas = clean;
 
   // Run OCR on this page
   await runOCR(canvas, pageNum);
@@ -325,6 +448,14 @@ async function loadImage() {
       state.baseWidth = w;
       state.baseHeight = h;
 
+      // Store pristine clean copy of the image for seamless inpainting
+      const clean = document.createElement('canvas');
+      clean.width = canvas.width;
+      clean.height = canvas.height;
+      clean.getContext('2d').drawImage(canvas, 0, 0);
+      state.cleanCanvas = clean;
+      state.pages[1] = { cleanCanvas: clean };
+
       updateProgress(30);
 
       // Run OCR
@@ -368,13 +499,17 @@ async function runOCR(canvas, pageNum) {
     });
 
     const { data } = await worker.recognize(canvas);
+    updateProgress(88);
+    updateLoadingStatus('Scanning vertical margin text & numbers...');
+
+    const verticalLines = await scanVerticalMargins(canvas, worker);
     await worker.terminate();
 
-    updateProgress(92);
+    updateProgress(94);
     updateLoadingStatus('Building editor...');
 
     // Process words
-    processOCRResults(data, pageNum);
+    processOCRResults(data, pageNum, verticalLines);
 
     updateProgress(100);
     setTimeout(() => hideLoading(), 300);
@@ -387,12 +522,101 @@ async function runOCR(canvas, pageNum) {
   }
 }
 
+/**
+ * Scan vertical document margins by rotating them 90 degrees to detect
+ * vertical numbers, issue dates, timestamps, and margin metadata.
+ */
+async function scanVerticalMargins(canvas, worker) {
+  const verticalLines = [];
+  const width = canvas.width;
+  const height = canvas.height;
+  const cropW = Math.max(50, Math.round(width * 0.12));
+  const cropH = height;
+
+  try {
+    // 1. Scan Left Margin: rotated +90deg (bottom-to-top text becomes left-to-right)
+    const rotCanvas = document.createElement('canvas');
+    rotCanvas.width = cropH;
+    rotCanvas.height = cropW;
+    const rotCtx = rotCanvas.getContext('2d');
+    rotCtx.translate(cropH, 0);
+    rotCtx.rotate(Math.PI / 2);
+    rotCtx.drawImage(canvas, 0, 0, cropW, cropH, 0, 0, cropW, cropH);
+
+    const marginRes = await worker.recognize(rotCanvas);
+    if (marginRes && marginRes.data && marginRes.data.lines) {
+      marginRes.data.lines.forEach(line => {
+        const words = [];
+        (line.words || []).forEach(w => {
+          const rawText = (w.text || '').trim();
+          if (!rawText || w.confidence < 35 || rawText.length === 0) return;
+
+          // In rotCanvas: x in [0, cropH], y in [0, cropW]
+          // Canvas coordinates: cx = ry; cy = cropH - rx;
+          const rx0 = w.bbox.x0;
+          const ry0 = w.bbox.y0;
+          const rx1 = w.bbox.x1;
+          const ry1 = w.bbox.y1;
+
+          const cx0 = ry0;
+          const cx1 = ry1;
+          const cy0 = Math.max(0, cropH - rx1);
+          const cy1 = Math.min(cropH, cropH - rx0);
+
+          words.push({
+            text: rawText,
+            confidence: w.confidence,
+            orientation: 'vertical-btt',
+            bbox: {
+              x0: cx0,
+              y0: cy0,
+              x1: cx1,
+              y1: cy1,
+            },
+            symbols: w.symbols,
+          });
+        });
+
+        if (words.length > 0) {
+          verticalLines.push({
+            words,
+            text: words.map(w => w.text).join(' '),
+            orientation: 'vertical-btt',
+            cropW: cropW,
+          });
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Vertical margin scan notice:', err);
+  }
+
+  return verticalLines;
+}
+
 // ============================================================
 // Text Style & Color Extraction Engine
 // ============================================================
 function rgbToHex(r, g, b) {
   const toHex = (c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(b)}`;
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function hexToRgb(hex) {
+  if (!hex) return null;
+  const clean = hex.replace('#', '');
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    return { r, g, b };
+  } else if (clean.length === 6) {
+    const r = parseInt(clean.substring(0, 2), 16);
+    const g = parseInt(clean.substring(2, 4), 16);
+    const b = parseInt(clean.substring(4, 6), 16);
+    return { r, g, b };
+  }
+  return null;
 }
 
 function analyzeLineMetrics(line, canvas) {
@@ -540,6 +764,7 @@ function extractTextStyleFromCanvas(canvas, bbox, ocrWord = {}, lineFontSize = n
   let isBold = false;
   let isItalic = false;
   let fontFamilyType = 'sans-serif'; // 'sans-serif' | 'serif' | 'monospace'
+  let fontFamilyKey = 'sans-serif';
 
   try {
     const imgData = ctx.getImageData(sx0, sy0, sw, sh);
@@ -638,12 +863,31 @@ function extractTextStyleFromCanvas(canvas, bbox, ocrWord = {}, lineFontSize = n
 
     // 5. Font Family Classification
     const fontName = (ocrWord.font_name || '').toLowerCase();
-    if (ocrWord.is_monospace || /courier|mono|consolas|menlo/i.test(fontName)) {
+    const rawWordText = (ocrWord.text || '').trim();
+    const isNumeric = /^[\$€£#₹]?\s*[\d]+([.,:\/-][\d]+)*\s*[%]?$/.test(rawWordText);
+
+    if (ocrWord.is_monospace || /courier|mono|consolas|menlo|vt323/i.test(fontName)) {
       fontFamilyType = 'monospace';
+      fontFamilyKey = 'courier';
     } else if (ocrWord.is_serif || /times|roman|serif|georgia|cambria|palatino|garamond/i.test(fontName)) {
       fontFamilyType = 'serif';
+      fontFamilyKey = 'serif';
+    } else if (isNumeric) {
+      // In receipts, invoices and documents, numbers often have monospace tabular layout
+      if (ocrWord.symbols && ocrWord.symbols.length >= 2) {
+        const widths = ocrWord.symbols.map(s => s.bbox ? (s.bbox.x1 - s.bbox.x0) : 0).filter(w => w > 0);
+        if (widths.length >= 2) {
+          const avg = widths.reduce((a, b) => a + b, 0) / widths.length;
+          const maxDiff = Math.max(...widths.map(w => Math.abs(w - avg)));
+          if (maxDiff <= 2.5) {
+            fontFamilyType = 'monospace';
+            fontFamilyKey = 'pos-thermal';
+          }
+        }
+      }
     } else {
       fontFamilyType = 'sans-serif';
+      fontFamilyKey = 'sans-serif';
     }
   } catch (err) {
     console.warn('Style extraction error for word:', err);
@@ -651,26 +895,44 @@ function extractTextStyleFromCanvas(canvas, bbox, ocrWord = {}, lineFontSize = n
 
   const bgHex = rgbToHex(bgRGB.r, bgRGB.g, bgRGB.b);
   const textHex = rgbToHex(textRGB.r, textRGB.g, textRGB.b);
-  const fontSize = lineFontSize || Math.max(9, Math.round(boxH * 1.15));
 
-  // Standard document font stacks matching original typography
-  let fontFamilyCSS = "Arial, Helvetica, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Liberation Sans', sans-serif";
-  if (fontFamilyType === 'serif') {
-    fontFamilyCSS = "'Times New Roman', Times, 'Liberation Serif', 'Nimbus Roman', Georgia, serif";
-  } else if (fontFamilyType === 'monospace') {
-    fontFamilyCSS = "'Courier New', Courier, 'Liberation Mono', Menlo, Consolas, monospace";
+  // Calculate precise font size
+  const wordText = (ocrWord.text || '').trim();
+  const isNum = /^[\$€£#₹]?\s*[\d]+([.,:\/-][\d]+)*\s*[%]?$/.test(wordText);
+  let fontSize = lineFontSize;
+
+  if (ocrWord.orientation === 'vertical-btt' && boxW > 0) {
+    fontSize = Math.max(9, Math.round(boxW * 1.1));
+  } else {
+    if (isNum && boxH > 0) {
+      // Digits typically occupy ~71-73% of the font em-square.
+      const digitFontSize = Math.round((boxH / 0.72) * 10) / 10;
+      if (!fontSize || Math.abs(fontSize - digitFontSize) > 4) {
+        fontSize = digitFontSize;
+      }
+    }
+    if (!fontSize) {
+      fontSize = Math.max(9, Math.round(boxH * 1.15));
+    }
   }
+  fontSize = Math.max(6, Math.round(fontSize * 10) / 10);
+
+  const fontDef = FONT_FAMILIES[fontFamilyKey] || FONT_FAMILIES['sans-serif'];
+  const fontFamilyCSS = fontDef.css;
 
   return {
     bgColor: bgRGB,
     bgHex,
     bgRgbString: `rgb(${bgRGB.r}, ${bgRGB.g}, ${bgRGB.b})`,
     textColor: textRGB,
+    baseTextColor: { ...textRGB },
+    darknessLevel: 1.0,
     textHex,
     textRgbString: `rgb(${textRGB.r}, ${textRGB.g}, ${textRGB.b})`,
     fontSize,
     fontWeight: isBold ? '700' : '400',
     fontStyle: isItalic ? 'italic' : 'normal',
+    fontFamilyKey,
     fontFamilyType,
     fontFamilyCSS,
     isBold,
@@ -678,55 +940,109 @@ function extractTextStyleFromCanvas(canvas, bbox, ocrWord = {}, lineFontSize = n
   };
 }
 
-function processOCRResults(data, pageNum) {
+function processOCRResults(data, pageNum, verticalLines = []) {
   state.words = [];
   state.lines = [];
+  state.activeWordIdx = null;
+  hideFloatingToolbar();
+  syncFontControls(null);
   DOM.textOverlay.innerHTML = '';
   DOM.lineEditor.innerHTML = '';
 
-  if (!data.lines || data.lines.length === 0) {
-    showToast('No text detected in this document.', 'warning');
-    return;
+  const canvas = DOM.mainCanvas;
+  const marginCropW = (verticalLines && verticalLines.length > 0)
+    ? (verticalLines[0].cropW || Math.round(canvas.width * 0.12))
+    : 0;
+
+  // 1. Process standard horizontal lines & words
+  if (data.lines && data.lines.length > 0) {
+    data.lines.forEach((line) => {
+      const lineWords = [];
+      const lineMetrics = analyzeLineMetrics(line, canvas);
+
+      line.words.forEach((word) => {
+        const text = (word.text || '').trim();
+        if (!text) return;
+
+        // Skip gibberish single/short characters in the margin strip where vertical text was found
+        if (marginCropW > 0 && word.bbox && word.bbox.x1 <= marginCropW && text.length <= 3) {
+          return;
+        }
+
+        const style = extractTextStyleFromCanvas(canvas, word.bbox, word, lineMetrics.fontSize);
+
+        const wordData = {
+          text: word.text,
+          originalText: word.text,
+          bbox: { ...word.bbox },
+          lineBbox: lineMetrics.lineBbox,
+          baselineY: lineMetrics.baselineY,
+          confidence: word.confidence,
+          lineIndex: state.lines.length,
+          orientation: 'horizontal',
+          style: style,
+          originalStyle: { ...style },
+          styleModified: false,
+          el: null,         // visual overlay element
+          panelEl: null,    // side panel element
+        };
+
+        const idx = state.words.length;
+        state.words.push(wordData);
+        lineWords.push(idx);
+      });
+
+      if (lineWords.length > 0) {
+        state.lines.push({
+          text: lineWords.map(i => state.words[i].text).join(' '),
+          originalText: lineWords.map(i => state.words[i].originalText).join(' '),
+          wordIndices: lineWords,
+          orientation: 'horizontal',
+        });
+      }
+    });
   }
 
-  const canvas = DOM.mainCanvas;
+  // 2. Add detected vertical margin lines & words (e.g. "Aadhaar No. Issued: 20/06/2026")
+  if (verticalLines && verticalLines.length > 0) {
+    verticalLines.forEach((vLine) => {
+      const lineWords = [];
+      const lineIdx = state.lines.length;
 
-  // Build lines and words
-  data.lines.forEach((line, lineIdx) => {
-    const lineWords = [];
-    const lineMetrics = analyzeLineMetrics(line, canvas);
+      vLine.words.forEach((word) => {
+        const style = extractTextStyleFromCanvas(canvas, word.bbox, word);
 
-    line.words.forEach((word) => {
-      if (!word.text.trim()) return;
+        const wordData = {
+          text: word.text,
+          originalText: word.text,
+          bbox: { ...word.bbox },
+          lineBbox: { ...word.bbox },
+          baselineY: null,
+          confidence: word.confidence,
+          lineIndex: lineIdx,
+          orientation: 'vertical-btt',
+          style: style,
+          originalStyle: { ...style },
+          styleModified: false,
+          el: null,
+          panelEl: null,
+        };
 
-      const style = extractTextStyleFromCanvas(canvas, word.bbox, word, lineMetrics.fontSize);
-
-      const wordData = {
-        text: word.text,
-        originalText: word.text,
-        bbox: { ...word.bbox },
-        lineBbox: lineMetrics.lineBbox,
-        baselineY: lineMetrics.baselineY,
-        confidence: word.confidence,
-        lineIndex: lineIdx,
-        style: style,
-        el: null,         // visual overlay element
-        panelEl: null,    // side panel element
-      };
-
-      const idx = state.words.length;
-      state.words.push(wordData);
-      lineWords.push(idx);
-    });
-
-    if (lineWords.length > 0) {
-      state.lines.push({
-        text: lineWords.map(i => state.words[i].text).join(' '),
-        originalText: lineWords.map(i => state.words[i].originalText).join(' '),
-        wordIndices: lineWords,
+        const idx = state.words.length;
+        state.words.push(wordData);
+        lineWords.push(idx);
       });
-    }
-  });
+
+      if (lineWords.length > 0) {
+        state.lines.push({
+          text: lineWords.map(i => state.words[i].text).join(' '),
+          originalText: lineWords.map(i => state.words[i].originalText).join(' '),
+          wordIndices: lineWords,
+          orientation: 'vertical-btt',
+        });
+      }
+    });
+  }
 
   // Create visual overlay
   createVisualOverlay();
@@ -741,51 +1057,731 @@ function processOCRResults(data, pageNum) {
   state.pages[pageNum] = {
     words: [...state.words],
     lines: [...state.lines],
+    cleanCanvas: state.cleanCanvas,
   };
 }
 
 // ============================================================
-// Visual Overlay Editor
+// Seamless Ink-Only Inpainting & Text Rendering Engine
+// ============================================================
+
+/**
+ * Seamlessly inpaint only the dark ink characters of a word,
+ * preserving 100% of the underlying paper texture, guilloche patterns,
+ * gradients, and colors without creating any flat solid color patches.
+ */
+function inpaintWordCharacters(targetCanvas, word, cleanCanvas) {
+  if (!targetCanvas || !word || !cleanCanvas) return;
+  const targetCtx = targetCanvas.getContext('2d');
+  const cleanCtx = cleanCanvas.getContext('2d');
+
+  const { x0: origX0, x1: origX1, y0: origY0, y1: origY1 } = word.bbox;
+  const lineY0 = word.lineBbox ? word.lineBbox.y0 : origY0;
+  const lineY1 = word.lineBbox ? word.lineBbox.y1 : origY1;
+  const baseY0 = Math.min(origY0, lineY0);
+  const baseY1 = Math.max(origY1, lineY1);
+
+  const padX = 4;
+  const x0 = Math.max(0, Math.min(targetCanvas.width - 1, origX0 - padX));
+  const x1 = Math.max(x0 + 1, Math.min(targetCanvas.width, origX1 + padX));
+  const y0 = Math.max(0, Math.min(targetCanvas.height - 1, baseY0 - 1));
+  const y1 = Math.max(y0 + 1, Math.min(targetCanvas.height, baseY1 + 1));
+
+  const boxW = x1 - x0;
+  const boxH = y1 - y0;
+  if (boxW <= 0 || boxH <= 0) return;
+
+  const cleanImgData = cleanCtx.getImageData(x0, y0, boxW, boxH);
+  const cleanData = cleanImgData.data;
+
+  // Sample top strip (above y0) and bottom strip (below y1)
+  const sampleTopY = Math.max(0, y0 - 4);
+  const topRows = y0 - sampleTopY;
+  const sampleBotY = y1;
+  const botRows = Math.min(cleanCanvas.height - sampleBotY, 4);
+
+  let topColors = new Float32Array(boxW * 3);
+  let botColors = new Float32Array(boxW * 3);
+
+  if (topRows > 0) {
+    const topData = cleanCtx.getImageData(x0, sampleTopY, boxW, topRows).data;
+    for (let x = 0; x < boxW; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let y = 0; y < topRows; y++) {
+        const idx = (y * boxW + x) * 4;
+        r += topData[idx];
+        g += topData[idx + 1];
+        b += topData[idx + 2];
+      }
+      topColors[x * 3] = r / topRows;
+      topColors[x * 3 + 1] = g / topRows;
+      topColors[x * 3 + 2] = b / topRows;
+    }
+  }
+
+  if (botRows > 0) {
+    const botData = cleanCtx.getImageData(x0, sampleBotY, boxW, botRows).data;
+    for (let x = 0; x < boxW; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let y = 0; y < botRows; y++) {
+        const idx = (y * boxW + x) * 4;
+        r += botData[idx];
+        g += botData[idx + 1];
+        b += botData[idx + 2];
+      }
+      botColors[x * 3] = r / botRows;
+      botColors[x * 3 + 1] = g / botRows;
+      botColors[x * 3 + 2] = b / botRows;
+    }
+  }
+
+  if (topRows === 0 && botRows > 0) {
+    topColors.set(botColors);
+  } else if (botRows === 0 && topRows > 0) {
+    botColors.set(topColors);
+  }
+
+  // Smooth topColors and botColors horizontally
+  function smoothColors(colors, len) {
+    const smoothed = new Float32Array(len * 3);
+    for (let i = 0; i < len; i++) {
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let di = -2; di <= 2; di++) {
+        const idx = i + di;
+        if (idx >= 0 && idx < len) {
+          r += colors[idx * 3];
+          g += colors[idx * 3 + 1];
+          b += colors[idx * 3 + 2];
+          count++;
+        }
+      }
+      smoothed[i * 3] = r / count;
+      smoothed[i * 3 + 1] = g / count;
+      smoothed[i * 3 + 2] = b / count;
+    }
+    return smoothed;
+  }
+  topColors = smoothColors(topColors, boxW);
+  botColors = smoothColors(botColors, boxW);
+
+  const style = word.style || extractTextStyleFromCanvas(cleanCanvas, word.bbox, word);
+  const isDarkText = (style.textColor.r * 0.299 + style.textColor.g * 0.587 + style.textColor.b * 0.114) <=
+                     (style.bgColor.r * 0.299 + style.bgColor.g * 0.587 + style.bgColor.b * 0.114);
+
+  const outImgData = targetCtx.createImageData(boxW, boxH);
+  const outData = outImgData.data;
+
+  const mask = new Uint8Array(boxW * boxH);
+  const bufR = new Float32Array(boxW * boxH);
+  const bufG = new Float32Array(boxW * boxH);
+  const bufB = new Float32Array(boxW * boxH);
+
+  for (let y = 0; y < boxH; y++) {
+    const v = boxH > 1 ? y / (boxH - 1) : 0;
+    for (let x = 0; x < boxW; x++) {
+      const pIdx = y * boxW + x;
+      const idx = pIdx * 4;
+
+      const origR = cleanData[idx];
+      const origG = cleanData[idx + 1];
+      const origB = cleanData[idx + 2];
+
+      const bgR = (1 - v) * topColors[x * 3] + v * botColors[x * 3];
+      const bgG = (1 - v) * topColors[x * 3 + 1] + v * botColors[x * 3 + 1];
+      const bgB = (1 - v) * topColors[x * 3 + 2] + v * botColors[x * 3 + 2];
+
+      const origLum = 0.299 * origR + 0.587 * origG + 0.114 * origB;
+      const bgLum = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
+
+      let isInk = false;
+      if (isDarkText) {
+        const lumDiff = bgLum - origLum;
+        const colorDist = Math.hypot(origR - bgR, origG - bgG, origB - bgB);
+        isInk = (lumDiff > 12) || (colorDist > 22 && origLum < bgLum);
+      } else {
+        const lumDiff = origLum - bgLum;
+        const colorDist = Math.hypot(origR - bgR, origG - bgG, origB - bgB);
+        isInk = (lumDiff > 12) || (colorDist > 22 && origLum > bgLum);
+      }
+
+      if (isInk) {
+        mask[pIdx] = 1;
+        bufR[pIdx] = bgR;
+        bufG[pIdx] = bgG;
+        bufB[pIdx] = bgB;
+      } else {
+        mask[pIdx] = 0;
+        bufR[pIdx] = origR;
+        bufG[pIdx] = origG;
+        bufB[pIdx] = origB;
+      }
+    }
+  }
+
+  // Dilate mask by 2 pixels to cleanly capture stroke edges and antialiasing
+  const dilatedMask = new Uint8Array(boxW * boxH);
+  for (let y = 0; y < boxH; y++) {
+    for (let x = 0; x < boxW; x++) {
+      const pIdx = y * boxW + x;
+      if (mask[pIdx]) {
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            const ny = y + dy;
+            const nx = x + dx;
+            if (ny >= 0 && ny < boxH && nx >= 0 && nx < boxW) {
+              dilatedMask[ny * boxW + nx] = 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Initialize dilated mask pixels with background
+  for (let y = 0; y < boxH; y++) {
+    const v = boxH > 1 ? y / (boxH - 1) : 0;
+    for (let x = 0; x < boxW; x++) {
+      const pIdx = y * boxW + x;
+      if (dilatedMask[pIdx] && !mask[pIdx]) {
+        const bgR = (1 - v) * topColors[x * 3] + v * botColors[x * 3];
+        const bgG = (1 - v) * topColors[x * 3 + 1] + v * botColors[x * 3 + 1];
+        const bgB = (1 - v) * topColors[x * 3 + 2] + v * botColors[x * 3 + 2];
+        bufR[pIdx] = bgR;
+        bufG[pIdx] = bgG;
+        bufB[pIdx] = bgB;
+      }
+    }
+  }
+
+  // 25 iterations of Laplace harmonic diffusion
+  for (let iter = 0; iter < 25; iter++) {
+    for (let y = 1; y < boxH - 1; y++) {
+      for (let x = 1; x < boxW - 1; x++) {
+        const pIdx = y * boxW + x;
+        if (dilatedMask[pIdx]) {
+          bufR[pIdx] = 0.25 * (bufR[pIdx - 1] + bufR[pIdx + 1] + bufR[pIdx - boxW] + bufR[pIdx + boxW]);
+          bufG[pIdx] = 0.25 * (bufG[pIdx - 1] + bufG[pIdx + 1] + bufG[pIdx - boxW] + bufG[pIdx + boxW]);
+          bufB[pIdx] = 0.25 * (bufB[pIdx - 1] + bufB[pIdx + 1] + bufB[pIdx - boxW] + bufB[pIdx + boxW]);
+        }
+      }
+    }
+  }
+
+  // Combine back: replace ONLY ink pixels; keep 100% of non-ink background untouched
+  for (let y = 0; y < boxH; y++) {
+    for (let x = 0; x < boxW; x++) {
+      const pIdx = y * boxW + x;
+      const idx = pIdx * 4;
+      if (dilatedMask[pIdx]) {
+        outData[idx] = Math.round(bufR[pIdx]);
+        outData[idx + 1] = Math.round(bufG[pIdx]);
+        outData[idx + 2] = Math.round(bufB[pIdx]);
+        outData[idx + 3] = 255;
+      } else {
+        outData[idx] = cleanData[idx];
+        outData[idx + 1] = cleanData[idx + 1];
+        outData[idx + 2] = cleanData[idx + 2];
+        outData[idx + 3] = cleanData[idx + 3];
+      }
+    }
+  }
+
+  targetCtx.putImageData(outImgData, x0, y0);
+}
+
+/**
+ * Render replacement characters for a word directly onto the canvas with crisp subpixel typography.
+ */
+function renderWordTextOnCanvas(targetCanvas, word) {
+  if (!targetCanvas || !word || !word.text) return;
+  const ctx = targetCanvas.getContext('2d');
+  const style = word.style || extractTextStyleFromCanvas(targetCanvas, word.bbox, word);
+
+  const { x0, x1, y0, y1 } = word.bbox;
+
+  if (word.orientation === 'vertical-btt') {
+    const boxW = x1 - x0;
+    const fontSize = style.fontSize || Math.round(boxW * 0.85);
+    const fontStr = `${style.fontStyle || 'normal'} ${style.fontWeight || '400'} ${fontSize}px ${style.fontFamilyCSS}`;
+    ctx.save();
+    ctx.font = fontStr;
+    ctx.fillStyle = style.textRgbString;
+    ctx.textBaseline = 'alphabetic';
+    ctx.translate(x0, y1);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(word.text, 0, boxW * 0.82);
+    ctx.restore();
+    return;
+  }
+
+  const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
+  const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
+  const effectiveY0 = Math.min(y0, lineY0);
+  const effectiveY1 = Math.max(y1, lineY1);
+  const boxH = effectiveY1 - effectiveY0;
+
+  const fontSize = style.fontSize || 14;
+  const fontStr = `${style.fontStyle || 'normal'} ${style.fontWeight || '400'} ${fontSize}px ${style.fontFamilyCSS}`;
+  ctx.font = fontStr;
+  ctx.fillStyle = style.textRgbString;
+  ctx.textBaseline = 'alphabetic';
+
+  const canvasBaselineY = (word.baselineY !== null && word.baselineY !== undefined)
+    ? word.baselineY
+    : (effectiveY0 + boxH * 0.82);
+
+  ctx.fillText(word.text, x0, canvasBaselineY);
+}
+
+/**
+ * Re-render all modified words onto the main canvas starting from the pristine cleanCanvas.
+ */
+function renderAllModifiedWordsOnCanvas(canvas) {
+  if (!canvas || !state.cleanCanvas) return;
+  const ctx = canvas.getContext('2d');
+  // 1. Reset canvas to pristine clean image
+  ctx.drawImage(state.cleanCanvas, 0, 0);
+
+  // 2. Filter modified words
+  const modifiedWords = state.words.filter(w => w.text !== w.originalText || !!w.styleModified);
+
+  // 3. For each modified word, inpaint old ink strokes seamlessly
+  for (const word of modifiedWords) {
+    inpaintWordCharacters(canvas, word, state.cleanCanvas);
+  }
+
+  // 4. For each modified word, draw new text characters
+  for (const word of modifiedWords) {
+    renderWordTextOnCanvas(canvas, word);
+  }
+}
+
+// ============================================================
+// Visual Overlay Editor & Font Controls
 // ============================================================
 function applyWordElementStyle(el, word, isEditing = false) {
   if (!el) return;
-  const isModified = word.text !== word.originalText;
+  const isModified = word.text !== word.originalText || !!word.styleModified;
   const style = word.style || extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
-  const { x0, x1 } = word.bbox;
-  const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
-  const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
-  const y0 = Math.min(word.bbox.y0, lineY0);
-  const y1 = Math.max(word.bbox.y1, lineY1);
+  const { x0, x1, y0, y1 } = word.bbox;
   const boxW = x1 - x0;
   const boxH = y1 - y0;
 
+  // Handle Bottom-to-Top Vertical Text (rot-90)
+  if (word.orientation === 'vertical-btt') {
+    const fontSize = style.fontSize || Math.round(boxW * 0.85);
+    el.classList.add('vertical-word-box');
+    el.style.fontFamily = style.fontFamilyCSS;
+    el.style.fontWeight = style.fontWeight || '400';
+    el.style.fontStyle = style.fontStyle || 'normal';
+    el.style.fontSize = fontSize + 'px';
+    el.style.lineHeight = '1.0';
+    el.style.left = x0 + 'px';
+    el.style.top = y1 + 'px';
+    el.style.width = boxH + 'px';
+    el.style.height = boxW + 'px';
+    el.style.transformOrigin = '0 0';
+    el.style.transform = 'rotate(-90deg)';
+    el.style.backgroundColor = 'transparent';
+    el.style.display = 'inline-flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'flex-start';
+    el.style.whiteSpace = 'nowrap';
+
+    if (isEditing) {
+      el.style.color = style.textRgbString;
+      el.style.zIndex = '45';
+      el.style.overflow = 'visible';
+    } else if (isModified) {
+      el.style.color = 'transparent';
+      el.style.zIndex = '15';
+      el.style.overflow = 'visible';
+    } else {
+      el.style.color = 'transparent';
+      el.style.zIndex = '1';
+      el.style.overflow = 'hidden';
+    }
+    return;
+  }
+
+  const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
+  const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
+  const effectiveY0 = Math.min(y0, lineY0);
+  const effectiveY1 = Math.max(y1, lineY1);
+  const effectiveBoxH = effectiveY1 - effectiveY0;
+
+  const fontSize = style.fontSize || 14;
+  const effectiveHeight = Math.max(effectiveBoxH, Math.round(fontSize * 1.25));
+
   el.style.fontFamily = style.fontFamilyCSS;
-  el.style.fontWeight = style.fontWeight;
-  el.style.fontStyle = style.fontStyle;
-  el.style.fontSize = style.fontSize + 'px';
-  el.style.lineHeight = boxH + 'px';
-  el.style.height = boxH + 'px';
+  el.style.fontWeight = style.fontWeight || '400';
+  el.style.fontStyle = style.fontStyle || 'normal';
+  el.style.fontSize = fontSize + 'px';
+  el.style.lineHeight = '1.15';
   el.style.display = 'inline-flex';
   el.style.alignItems = 'center';
+  el.style.justifyContent = 'flex-start';
 
-  if (isModified || isEditing) {
-    el.style.backgroundColor = style.bgRgbString;
+  // NEVER set an opaque solid background - keep 100% transparent to preserve background
+  el.style.backgroundColor = 'transparent';
+
+  if (isEditing) {
+    // When typing, show text in DOM element so user sees what they type
     el.style.color = style.textRgbString;
     el.style.minWidth = boxW + 'px';
     el.style.width = 'auto';
-    el.style.padding = '0 2px';
-    el.style.zIndex = isEditing ? '25' : '15';
+    el.style.minHeight = boxH + 'px';
+    el.style.height = effectiveHeight + 'px';
+    if (effectiveHeight > boxH) {
+      const diffY = effectiveHeight - boxH;
+      el.style.top = Math.max(0, y0 - diffY / 2) + 'px';
+    } else {
+      el.style.top = y0 + 'px';
+    }
+    el.style.padding = '0 3px';
+    el.style.zIndex = '25';
+    el.style.overflow = 'visible';
+    el.style.whiteSpace = 'nowrap';
+  } else if (isModified) {
+    // Word is modified: the canvas underneath already displays the inpainting + text
+    // The DOM overlay remains transparent and allows clicking/focusing
+    el.style.color = 'transparent';
+    el.style.minWidth = boxW + 'px';
+    el.style.width = 'auto';
+    el.style.minHeight = boxH + 'px';
+    el.style.height = effectiveHeight + 'px';
+    if (effectiveHeight > boxH) {
+      const diffY = effectiveHeight - boxH;
+      el.style.top = Math.max(0, y0 - diffY / 2) + 'px';
+    } else {
+      el.style.top = y0 + 'px';
+    }
+    el.style.padding = '0 3px';
+    el.style.zIndex = '15';
     el.style.overflow = 'visible';
     el.style.whiteSpace = 'nowrap';
   } else {
-    el.style.backgroundColor = 'transparent';
     el.style.color = 'transparent';
     el.style.minWidth = boxW + 'px';
     el.style.width = boxW + 'px';
+    el.style.minHeight = boxH + 'px';
+    el.style.height = boxH + 'px';
+    el.style.top = y0 + 'px';
     el.style.padding = '0';
     el.style.zIndex = '1';
     el.style.overflow = 'hidden';
     el.style.whiteSpace = 'nowrap';
+  }
+}
+
+function syncFontControls(word) {
+  if (!word || !word.style) {
+    if (DOM.fontToolbarGroup) {
+      DOM.fontToolbarGroup.style.opacity = '0.45';
+      DOM.fontToolbarGroup.style.pointerEvents = 'none';
+    }
+    return;
+  }
+
+  if (DOM.fontToolbarGroup) {
+    DOM.fontToolbarGroup.style.opacity = '1';
+    DOM.fontToolbarGroup.style.pointerEvents = 'all';
+  }
+
+  const style = word.style;
+  const fontKey = style.fontFamilyKey || 'sans-serif';
+  const size = Math.round(style.fontSize || 14);
+  const isBold = style.fontWeight === '700' || !!style.isBold;
+  const isItalic = style.fontStyle === 'italic' || !!style.isItalic;
+
+  // Sync toolbar selects
+  if (DOM.fontFamilySelect) DOM.fontFamilySelect.value = fontKey;
+  if (DOM.fontSizeInput) DOM.fontSizeInput.value = size;
+  if (DOM.btnFontBold) DOM.btnFontBold.classList.toggle('active', isBold);
+  if (DOM.btnFontItalic) DOM.btnFontItalic.classList.toggle('active', isItalic);
+
+  // Sync floating toolbar
+  if (DOM.floatingFontSelect) DOM.floatingFontSelect.value = fontKey;
+  if (DOM.floatingSizeBadge) DOM.floatingSizeBadge.textContent = `${size}px`;
+  if (DOM.floatingBtnBold) DOM.floatingBtnBold.classList.toggle('active', isBold);
+  if (DOM.floatingBtnItalic) DOM.floatingBtnItalic.classList.toggle('active', isItalic);
+
+  // Sync ink shade / darkness & color
+  const level = Math.round(((style && style.darknessLevel !== undefined) ? style.darknessLevel : 1.0) * 100);
+  const colorHex = (style && style.textHex) ? style.textHex : '#000000';
+
+  if (DOM.inkShadeValue) DOM.inkShadeValue.textContent = `${level}%`;
+  if (DOM.floatingShadeBadge) DOM.floatingShadeBadge.textContent = `${level}%`;
+  if (DOM.textColorPicker) DOM.textColorPicker.value = colorHex;
+  if (DOM.colorPickerSwatch) DOM.colorPickerSwatch.style.backgroundColor = colorHex;
+}
+
+function showFloatingToolbar(wordIdx) {
+  if (wordIdx === null || wordIdx === undefined) return;
+  const word = state.words[wordIdx];
+  if (!word || !word.el) return;
+
+  if (DOM.floatingWordToolbar) {
+    DOM.floatingWordToolbar.style.display = 'flex';
+    syncFontControls(word);
+    positionFloatingToolbar(wordIdx);
+  }
+}
+
+function hideFloatingToolbar() {
+  if (DOM.floatingWordToolbar) {
+    DOM.floatingWordToolbar.style.display = 'none';
+  }
+}
+
+function positionFloatingToolbar(wordIdx) {
+  if (wordIdx === null || wordIdx === undefined) wordIdx = state.activeWordIdx;
+  if (wordIdx === null || wordIdx === undefined) return;
+  const word = state.words[wordIdx];
+  if (!word || !word.el) return;
+
+  const toolbar = DOM.floatingWordToolbar;
+  if (!toolbar || toolbar.style.display === 'none') return;
+
+  const wordRect = word.el.getBoundingClientRect();
+  const vpRect = DOM.canvasViewport.getBoundingClientRect();
+
+  const toolbarWidth = toolbar.offsetWidth || 260;
+  const toolbarHeight = toolbar.offsetHeight || 34;
+
+  let left = wordRect.left + (wordRect.width / 2) - (toolbarWidth / 2);
+  const minLeft = vpRect.left + 10;
+  const maxLeft = vpRect.right - toolbarWidth - 10;
+  left = Math.max(minLeft, Math.min(maxLeft, left));
+
+  let top = wordRect.top - toolbarHeight - 8;
+  if (top < vpRect.top + 10) {
+    top = wordRect.bottom + 8;
+  }
+
+  toolbar.style.position = 'fixed';
+  toolbar.style.left = `${Math.round(left)}px`;
+  toolbar.style.top = `${Math.round(top)}px`;
+}
+
+function changeActiveWordFontSize(delta) {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  const currentSize = (word.style && word.style.fontSize) ? word.style.fontSize : 14;
+  const newSize = Math.max(6, Math.min(150, Math.round((currentSize + delta) * 10) / 10));
+  setActiveWordFontSize(newSize);
+}
+
+function setActiveWordFontSize(newSize) {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  word.style.fontSize = newSize;
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+  positionFloatingToolbar(state.activeWordIdx);
+}
+
+function setActiveWordFontFamily(fontKey) {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  const fontDef = FONT_FAMILIES[fontKey] || FONT_FAMILIES['sans-serif'];
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  word.style.fontFamilyKey = fontKey;
+  word.style.fontFamilyCSS = fontDef.css;
+  word.style.fontFamilyType = fontDef.type;
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+  positionFloatingToolbar(state.activeWordIdx);
+}
+
+function toggleActiveWordBold() {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  word.style.isBold = !word.style.isBold;
+  word.style.fontWeight = word.style.isBold ? '700' : '400';
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+}
+
+function toggleActiveWordItalic() {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  word.style.isItalic = !word.style.isItalic;
+  word.style.fontStyle = word.style.isItalic ? 'italic' : 'normal';
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+}
+
+function adjustActiveWordDarkness(delta) {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  // Current darkness level (1.0 = 100% normal detected shade)
+  // Step by 0.15 (15%), range 0.20 to 2.00
+  const currentLevel = (word.style.darknessLevel !== undefined) ? word.style.darknessLevel : 1.0;
+  const newLevel = Math.max(0.20, Math.min(2.0, Math.round((currentLevel + delta) * 100) / 100));
+
+  applyWordDarknessLevel(word, newLevel);
+}
+
+function applyWordDarknessLevel(word, newLevel) {
+  if (!word.style.baseTextColor) {
+    word.style.baseTextColor = { ...word.style.textColor };
+  }
+  const base = word.style.baseTextColor;
+  const bg = word.style.bgColor || { r: 255, g: 255, b: 255 };
+
+  let r, g, b;
+  if (newLevel >= 1.0) {
+    // Darker: interpolate towards pure black (0, 0, 0)
+    const t = Math.min(1.0, newLevel - 1.0);
+    r = Math.max(0, Math.round(base.r * (1 - t)));
+    g = Math.max(0, Math.round(base.g * (1 - t)));
+    b = Math.max(0, Math.round(base.b * (1 - t)));
+  } else {
+    // Lighter: fade towards document background color (or lighter gray)
+    const t = Math.min(1.0, 1.0 - newLevel);
+    r = Math.min(255, Math.round(base.r * (1 - t) + bg.r * t));
+    g = Math.min(255, Math.round(base.g * (1 - t) + bg.g * t));
+    b = Math.min(255, Math.round(base.b * (1 - t) + bg.b * t));
+  }
+
+  word.style.darknessLevel = newLevel;
+  word.style.textColor = { r, g, b };
+  word.style.textHex = rgbToHex(r, g, b);
+  word.style.textRgbString = `rgb(${r}, ${g}, ${b})`;
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+}
+
+function setActiveWordColor(hex) {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (!word.style) {
+    word.style = extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
+  }
+
+  pushStyleUndo(state.activeWordIdx, { ...word.style });
+
+  const parsed = hexToRgb(hex);
+  if (!parsed) return;
+
+  word.style.baseTextColor = { ...parsed };
+  word.style.textColor = { ...parsed };
+  word.style.textHex = hex;
+  word.style.textRgbString = `rgb(${parsed.r}, ${parsed.g}, ${parsed.b})`;
+  word.style.darknessLevel = 1.0;
+  word.styleModified = true;
+
+  if (word.el) {
+    word.el.classList.add('modified');
+    applyWordElementStyle(word.el, word, document.activeElement === word.el);
+  }
+
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+  syncFontControls(word);
+}
+
+function resetActiveWordStyle() {
+  if (state.activeWordIdx === null || state.activeWordIdx === undefined) return;
+  const word = state.words[state.activeWordIdx];
+  if (!word) return;
+
+  if (word.originalStyle) {
+    pushStyleUndo(state.activeWordIdx, { ...word.style });
+    word.style = {
+      ...word.originalStyle,
+      baseTextColor: { ...word.originalStyle.textColor },
+      darknessLevel: 1.0,
+    };
+    word.styleModified = false;
+    if (word.text === word.originalText && word.el) {
+      word.el.classList.remove('modified');
+    }
+    if (word.el) {
+      applyWordElementStyle(word.el, word, document.activeElement === word.el);
+    }
+    renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+    syncFontControls(word);
+    positionFloatingToolbar(state.activeWordIdx);
+    showToast('Reset to detected font style & shade', 'info');
   }
 }
 
@@ -801,20 +1797,33 @@ function createVisualOverlay() {
     el.dataset.wordIdx = idx;
 
     // Position based on bbox (using line-level height for baseline consistency)
-    const { x0, x1 } = word.bbox;
-    const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
-    const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
-    const y0 = Math.min(word.bbox.y0, lineY0);
-    const y1 = Math.max(word.bbox.y1, lineY1);
+    const isVertical = word.orientation === 'vertical-btt';
+    const { x0, x1, y0, y1 } = word.bbox;
     const boxW = x1 - x0;
     const boxH = y1 - y0;
 
-    el.style.left = x0 + 'px';
-    el.style.top = y0 + 'px';
-    el.style.height = boxH + 'px';
-    el.style.minWidth = boxW + 'px';
+    if (isVertical) {
+      el.classList.add('vertical-word-box');
+      el.style.left = x0 + 'px';
+      el.style.top = y1 + 'px';
+      el.style.width = boxH + 'px';
+      el.style.height = boxW + 'px';
+      el.style.transformOrigin = '0 0';
+      el.style.transform = 'rotate(-90deg)';
+    } else {
+      const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
+      const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
+      const effectiveY0 = Math.min(y0, lineY0);
+      const effectiveY1 = Math.max(y1, lineY1);
+      const effectiveBoxH = effectiveY1 - effectiveY0;
 
-    if (word.text !== word.originalText) {
+      el.style.left = x0 + 'px';
+      el.style.top = effectiveY0 + 'px';
+      el.style.height = effectiveBoxH + 'px';
+      el.style.minWidth = boxW + 'px';
+    }
+
+    if (word.text !== word.originalText || word.styleModified) {
       el.classList.add('modified');
     }
 
@@ -822,9 +1831,28 @@ function createVisualOverlay() {
 
     // Events
     el.addEventListener('focus', () => {
+      state.activeWordIdx = idx;
       el.classList.add('editing');
+      if (state.cleanCanvas) {
+        // Inpaint the underlying word so no double text appears while typing
+        inpaintWordCharacters(DOM.mainCanvas, word, state.cleanCanvas);
+      }
       applyWordElementStyle(el, word, true);
       highlightSidePanelLine(word.lineIndex);
+      syncFontControls(word);
+      showFloatingToolbar(idx);
+    });
+
+    el.addEventListener('input', () => {
+      word.text = el.textContent;
+      el.classList.toggle('modified', word.text !== word.originalText || !!word.styleModified);
+    });
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.activeWordIdx = idx;
+      syncFontControls(word);
+      showFloatingToolbar(idx);
     });
 
     el.addEventListener('blur', () => {
@@ -834,9 +1862,18 @@ function createVisualOverlay() {
         pushUndo(idx, word.text, newText);
         word.text = newText;
       }
-      el.classList.toggle('modified', word.text !== word.originalText);
+      el.classList.toggle('modified', word.text !== word.originalText || !!word.styleModified);
+      renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
       applyWordElementStyle(el, word, false);
       syncSidePanelLine(word.lineIndex);
+
+      setTimeout(() => {
+        const active = document.activeElement;
+        const insideToolbar = active && (active.closest('#floatingWordToolbar') || active.closest('#fontToolbarGroup'));
+        if (!insideToolbar && (!active || !active.classList.contains('word-box'))) {
+          hideFloatingToolbar();
+        }
+      }, 180);
     });
 
     el.addEventListener('keydown', (e) => {
@@ -851,6 +1888,23 @@ function createVisualOverlay() {
         if (nextIdx < state.words.length && state.words[nextIdx].el) {
           state.words[nextIdx].el.focus();
         }
+      }
+      // Bracket keys for quick font size adjustment while editing
+      if ((e.key === '[' || e.key === '{') && (e.ctrlKey || e.metaKey || e.altKey)) {
+        e.preventDefault();
+        changeActiveWordFontSize(-1);
+      }
+      if ((e.key === ']' || e.key === '}') && (e.ctrlKey || e.metaKey || e.altKey)) {
+        e.preventDefault();
+        changeActiveWordFontSize(1);
+      }
+      if ((e.key === 'b' || e.key === 'B') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        toggleActiveWordBold();
+      }
+      if ((e.key === 'i' || e.key === 'I') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        toggleActiveWordItalic();
       }
     });
 
@@ -941,6 +1995,7 @@ function createSidePanelLines() {
         }
 
         contentEl.classList.toggle('modified', newText !== line.originalText);
+        renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
       }
     });
 
@@ -992,8 +2047,19 @@ function scrollToWord(wordIdx) {
 // Undo / Redo
 // ============================================================
 function pushUndo(wordIdx, oldText, newText) {
-  state.undoStack.push({ wordIdx, oldText, newText });
+  state.undoStack.push({ type: 'text', wordIdx, oldText, newText });
   state.redoStack = []; // Clear redo on new edit
+  updateUndoRedoButtons();
+}
+
+function pushStyleUndo(wordIdx, oldStyle) {
+  state.undoStack.push({
+    type: 'style',
+    wordIdx,
+    oldStyle: { ...oldStyle },
+    newStyle: null,
+  });
+  state.redoStack = [];
   updateUndoRedoButtons();
 }
 
@@ -1002,17 +2068,31 @@ function performUndo() {
 
   const action = state.undoStack.pop();
   const word = state.words[action.wordIdx];
-  word.text = action.oldText;
+  if (!word) return;
 
-  if (word.el) {
-    word.el.textContent = action.oldText;
-    word.el.classList.toggle('modified', action.oldText !== word.originalText);
-    applyWordElementStyle(word.el, word, false);
+  if (action.type === 'style') {
+    action.newStyle = { ...word.style };
+    word.style = { ...action.oldStyle };
+    word.styleModified = true;
+    if (word.el) {
+      applyWordElementStyle(word.el, word, document.activeElement === word.el);
+    }
+    syncFontControls(word);
+    state.redoStack.push(action);
+  } else {
+    word.text = action.oldText;
+    if (word.el) {
+      word.el.textContent = action.oldText;
+      word.el.classList.toggle('modified', word.text !== word.originalText || !!word.styleModified);
+      applyWordElementStyle(word.el, word, false);
+    }
+    syncSidePanelLine(word.lineIndex);
+    state.redoStack.push(action);
   }
 
-  syncSidePanelLine(word.lineIndex);
-  state.redoStack.push(action);
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
   updateUndoRedoButtons();
+  if (state.activeWordIdx !== null) positionFloatingToolbar(state.activeWordIdx);
 }
 
 function performRedo() {
@@ -1020,17 +2100,32 @@ function performRedo() {
 
   const action = state.redoStack.pop();
   const word = state.words[action.wordIdx];
-  word.text = action.newText;
+  if (!word) return;
 
-  if (word.el) {
-    word.el.textContent = action.newText;
-    word.el.classList.toggle('modified', action.newText !== word.originalText);
-    applyWordElementStyle(word.el, word, false);
+  if (action.type === 'style') {
+    if (action.newStyle) {
+      word.style = { ...action.newStyle };
+      word.styleModified = true;
+      if (word.el) {
+        applyWordElementStyle(word.el, word, document.activeElement === word.el);
+      }
+      syncFontControls(word);
+    }
+    state.undoStack.push(action);
+  } else {
+    word.text = action.newText;
+    if (word.el) {
+      word.el.textContent = action.newText;
+      word.el.classList.toggle('modified', word.text !== word.originalText || !!word.styleModified);
+      applyWordElementStyle(word.el, word, false);
+    }
+    syncSidePanelLine(word.lineIndex);
+    state.undoStack.push(action);
   }
 
-  syncSidePanelLine(word.lineIndex);
-  state.undoStack.push(action);
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
   updateUndoRedoButtons();
+  if (state.activeWordIdx !== null) positionFloatingToolbar(state.activeWordIdx);
 }
 
 function updateUndoRedoButtons() {
@@ -1059,6 +2154,7 @@ function applyZoom() {
   DOM.textOverlay.style.transformOrigin = 'top left';
 
   DOM.zoomValue.textContent = Math.round(state.zoom * 100) + '%';
+  if (state.activeWordIdx !== null) positionFloatingToolbar(state.activeWordIdx);
 }
 
 function zoomIn() {
@@ -1100,6 +2196,9 @@ function goToPage(pageNum) {
 
   state.currentPage = pageNum;
   updatePageIndicator();
+  hideFloatingToolbar();
+  state.activeWordIdx = null;
+  syncFontControls(null);
 
   // Check if page already processed
   if (state.pages[pageNum]) {
@@ -1131,6 +2230,17 @@ async function renderPageFromCache(pageNum) {
 
   await page.render({ canvasContext: ctx, viewport }).promise;
   updateProgress(80);
+
+  // Snapshot clean canvas
+  const clean = document.createElement('canvas');
+  clean.width = canvas.width;
+  clean.height = canvas.height;
+  clean.getContext('2d').drawImage(canvas, 0, 0);
+  state.cleanCanvas = clean;
+  if (state.pages[pageNum]) state.pages[pageNum].cleanCanvas = clean;
+
+  // Re-render modified words onto the canvas
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
 
   // Rebuild overlay from cached words
   createVisualOverlay();
@@ -1165,139 +2275,82 @@ async function saveFile() {
 }
 
 async function savePDF() {
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+
   showLoading('Saving PDF', 'Applying text changes...');
   updateProgress(10);
 
   try {
-    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const { PDFDocument } = PDFLib;
 
-    // Load original PDF
-    const pdfDoc = await PDFDocument.load(state.fileBytes, {
+    // Load original PDF (retrieve fresh ArrayBuffer to prevent detachment errors)
+    const pdfBytes = state.file ? await state.file.arrayBuffer() : state.fileBytes.slice(0);
+    const pdfDoc = await PDFDocument.load(pdfBytes, {
       ignoreEncryption: true,
     });
 
-    // Embed font variants for faithful typography matching
-    const fonts = {
-      helvetica: await pdfDoc.embedFont(StandardFonts.Helvetica),
-      helveticaBold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
-      helveticaOblique: await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
-      helveticaBoldOblique: await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique),
-      times: await pdfDoc.embedFont(StandardFonts.TimesRoman),
-      timesBold: await pdfDoc.embedFont(StandardFonts.TimesRomanBold),
-      timesItalic: await pdfDoc.embedFont(StandardFonts.TimesRomanItalic),
-      timesBoldItalic: await pdfDoc.embedFont(StandardFonts.TimesRomanBoldItalic),
-      courier: await pdfDoc.embedFont(StandardFonts.Courier),
-      courierBold: await pdfDoc.embedFont(StandardFonts.CourierBold),
-      courierOblique: await pdfDoc.embedFont(StandardFonts.CourierOblique),
-      courierBoldOblique: await pdfDoc.embedFont(StandardFonts.CourierBoldOblique),
-    };
-
-    function selectPdfFont(style) {
-      const { fontFamilyType, isBold, isItalic } = style;
-      if (fontFamilyType === 'serif') {
-        if (isBold && isItalic) return fonts.timesBoldItalic;
-        if (isBold) return fonts.timesBold;
-        if (isItalic) return fonts.timesItalic;
-        return fonts.times;
-      } else if (fontFamilyType === 'monospace') {
-        if (isBold && isItalic) return fonts.courierBoldOblique;
-        if (isBold) return fonts.courierBold;
-        if (isItalic) return fonts.courierOblique;
-        return fonts.courier;
-      } else {
-        if (isBold && isItalic) return fonts.helveticaBoldOblique;
-        if (isBold) return fonts.helveticaBold;
-        if (isItalic) return fonts.helveticaOblique;
-        return fonts.helvetica;
-      }
+    // Ensure all custom fonts are ready before export
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
     }
 
     // Process all pages that have edits
     const pagesToProcess = Object.keys(state.pages).map(Number);
-    // Include current page
     if (!pagesToProcess.includes(state.currentPage)) {
       state.pages[state.currentPage] = {
         words: [...state.words],
         lines: [...state.lines],
+        cleanCanvas: state.cleanCanvas,
       };
       pagesToProcess.push(state.currentPage);
     }
 
-    const renderScale = 2; // Must match the scale used in renderPage
-
     for (const pageNum of pagesToProcess) {
       const pageData = state.pages[pageNum];
       if (!pageData) continue;
+
+      const pageWords = (pageNum === state.currentPage) ? state.words : (pageData.words || []);
+      const modifiedWords = pageWords.filter(w => w.text !== w.originalText || !!w.styleModified);
+
+      // Only modify pages that actually have edits
+      if (modifiedWords.length === 0) continue;
 
       const page = pdfDoc.getPages()[pageNum - 1];
       if (!page) continue;
 
       const { width: pdfWidth, height: pdfHeight } = page.getSize();
 
-      // The canvas was rendered at 2x scale
-      const canvasWidth = DOM.mainCanvas.width;
-      const canvasHeight = DOM.mainCanvas.height;
-
-      // Find modified words
-      const modifiedWords = pageData.words.filter(w => w.text !== w.originalText);
-
-      for (const word of modifiedWords) {
-        const style = word.style || extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
-        const pdfFont = selectPdfFont(style);
-
-        // Convert canvas coords to PDF coords
-        // Canvas Y is top-down, PDF Y is bottom-up
-        const scaleX = pdfWidth / (canvasWidth / renderScale);
-        const scaleY = pdfHeight / (canvasHeight / renderScale);
-
-        // Bbox in canvas pixel coords (using line-level span for vertical alignment)
-        const { x0, x1 } = word.bbox;
-        const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
-        const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
-        const y0 = Math.min(word.bbox.y0, lineY0);
-        const y1 = Math.max(word.bbox.y1, lineY1);
-
-        // Convert to PDF coords
-        const pdfX = (x0 / renderScale) * scaleX;
-        const boxW = ((x1 - x0) / renderScale) * scaleX;
-        const boxH = ((y1 - y0) / renderScale) * scaleY;
-        const pdfY = pdfHeight - ((y0 / renderScale) * scaleY) - boxH;
-
-        // Scale font size from canvas pixels to PDF points
-        const fontSize = Math.max(6, (style.fontSize / renderScale) * scaleY);
-        let textWidth = boxW;
-        try {
-          textWidth = pdfFont.widthOfTextAtSize(word.text, fontSize);
-        } catch (e) {
-          textWidth = boxW;
+      let pageCanvas;
+      if (pageNum === state.currentPage) {
+        pageCanvas = DOM.mainCanvas;
+        renderAllModifiedWordsOnCanvas(pageCanvas);
+      } else {
+        pageCanvas = document.createElement('canvas');
+        pageCanvas.width = pageData.cleanCanvas.width;
+        pageCanvas.height = pageData.cleanCanvas.height;
+        const pageCtx = pageCanvas.getContext('2d');
+        pageCtx.drawImage(pageData.cleanCanvas, 0, 0);
+        for (const w of modifiedWords) {
+          inpaintWordCharacters(pageCanvas, w, pageData.cleanCanvas);
         }
-        const rectW = Math.max(boxW + 2, textWidth + 4);
-
-        // Inpaint background rectangle with original sampled background color
-        page.drawRectangle({
-          x: pdfX - 1,
-          y: pdfY - 1,
-          width: rectW,
-          height: boxH + 2,
-          color: rgb(style.bgColor.r / 255, style.bgColor.g / 255, style.bgColor.b / 255),
-          borderWidth: 0,
-        });
-
-        // Exact PDF baseline Y calculation
-        const canvasBaselineY = (word.baselineY !== null && word.baselineY !== undefined)
-          ? word.baselineY
-          : (y0 + (y1 - y0) * 0.82);
-        const pdfBaselineY = pdfHeight - ((canvasBaselineY / renderScale) * scaleY);
-
-        // Draw new text with exact matched font size, color, and baseline
-        page.drawText(word.text, {
-          x: pdfX,
-          y: pdfBaselineY,
-          size: fontSize,
-          font: pdfFont,
-          color: rgb(style.textColor.r / 255, style.textColor.g / 255, style.textColor.b / 255),
-        });
+        for (const w of modifiedWords) {
+          renderWordTextOnCanvas(pageCanvas, w);
+        }
       }
+
+      // Convert high-res rendered canvas to PNG
+      const pngDataUrl = pageCanvas.toDataURL('image/png');
+      const pngImage = await pdfDoc.embedPng(pngDataUrl);
+
+      // Draw the modified page canvas directly onto the PDF page
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pdfWidth,
+        height: pdfHeight,
+      });
 
       updateProgress(10 + (pageNum / pagesToProcess.length) * 70);
     }
@@ -1311,7 +2364,7 @@ async function savePDF() {
 
     // Download as blob URL (keeps file openable from browser download history)
     const blob = new Blob([modifiedBytes], { type: 'application/pdf' });
-    triggerDownload(blob, state.file.name);
+    triggerDownload(blob, state.file ? state.file.name : 'document.pdf');
 
     updateProgress(100);
     setTimeout(() => hideLoading(), 300);
@@ -1323,61 +2376,24 @@ async function savePDF() {
   }
 }
 
-function saveImage() {
+async function saveImage() {
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+
   showLoading('Saving Image', 'Applying text changes...');
   updateProgress(20);
 
   try {
-    // Create a new canvas with original dimensions
-    const offscreen = document.createElement('canvas');
-    offscreen.width = DOM.mainCanvas.width;
-    offscreen.height = DOM.mainCanvas.height;
-    const ctx = offscreen.getContext('2d');
-
-    // Draw original image
-    if (state.originalImage) {
-      ctx.drawImage(state.originalImage, 0, 0, offscreen.width, offscreen.height);
-    } else {
-      // Fallback: copy from main canvas
-      ctx.drawImage(DOM.mainCanvas, 0, 0);
+    // Ensure all custom fonts are ready before drawing to canvas
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
     }
 
-    updateProgress(50);
+    // Render all modified words on the main canvas with seamless inpainting
+    renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
 
-    // Find modified words and apply changes
-    const modifiedWords = state.words.filter(w => w.text !== w.originalText);
-
-    for (const word of modifiedWords) {
-      const style = word.style || extractTextStyleFromCanvas(DOM.mainCanvas, word.bbox, word);
-      const { x0, x1 } = word.bbox;
-      const lineY0 = word.lineBbox ? word.lineBbox.y0 : word.bbox.y0;
-      const lineY1 = word.lineBbox ? word.lineBbox.y1 : word.bbox.y1;
-      const y0 = Math.min(word.bbox.y0, lineY0);
-      const y1 = Math.max(word.bbox.y1, lineY1);
-      const boxW = x1 - x0;
-      const boxH = y1 - y0;
-
-      const fontSize = style.fontSize;
-      const fontStr = `${style.fontStyle} ${style.fontWeight} ${fontSize}px ${style.fontFamilyCSS}`;
-      ctx.font = fontStr;
-      const textMetrics = ctx.measureText(word.text);
-      const rectW = Math.max(boxW + 2, textMetrics.width + 4);
-
-      // Inpaint original text area with sampled background color
-      ctx.fillStyle = style.bgRgbString;
-      ctx.fillRect(x0 - 1, y0 - 1, rectW, boxH + 2);
-
-      // Draw new text with sampled text color and font on exact baseline
-      ctx.fillStyle = style.textRgbString;
-      ctx.font = fontStr;
-      ctx.textBaseline = 'alphabetic';
-      const canvasBaselineY = (word.baselineY !== null && word.baselineY !== undefined)
-        ? word.baselineY
-        : (y0 + boxH * 0.82);
-      ctx.fillText(word.text, x0, canvasBaselineY);
-    }
-
-    updateProgress(80);
+    updateProgress(70);
 
     // Determine output format — preserve the original MIME type
     const mimeMap = {
@@ -1386,11 +2402,11 @@ function saveImage() {
       'image/png': 'image/png',
       'image/webp': 'image/webp',
     };
-    const mimeType = mimeMap[state.file.type] || 'image/png';
+    const mimeType = (state.file && mimeMap[state.file.type]) || 'image/png';
 
     // Convert canvas to blob, then trigger download
-    offscreen.toBlob((blob) => {
-      triggerDownload(blob, state.file.name);
+    DOM.mainCanvas.toBlob((blob) => {
+      triggerDownload(blob, state.file ? state.file.name : 'document.png');
       updateProgress(100);
       setTimeout(() => hideLoading(), 300);
       showToast('Image saved successfully!', 'success');
@@ -1420,6 +2436,80 @@ function triggerDownload(blob, filename) {
   }, 3000);
 }
 
+/**
+ * Manually add an editable text box anywhere on the document canvas.
+ */
+function addNewTextBoxAt(canvasX, canvasY) {
+  const defaultFontSize = 18;
+  const wordData = {
+    text: 'New Text',
+    originalText: '',
+    bbox: {
+      x0: canvasX,
+      y0: Math.max(0, canvasY - defaultFontSize),
+      x1: canvasX + 90,
+      y1: canvasY + 4,
+    },
+    lineBbox: null,
+    baselineY: canvasY,
+    confidence: 100,
+    lineIndex: state.lines.length,
+    orientation: 'horizontal',
+    style: {
+      bgColor: { r: 255, g: 255, b: 255 },
+      bgHex: '#ffffff',
+      bgRgbString: 'rgb(255, 255, 255)',
+      textColor: { r: 15, g: 23, b: 42 },
+      baseTextColor: { r: 15, g: 23, b: 42 },
+      darknessLevel: 1.0,
+      textHex: '#0f172a',
+      textRgbString: 'rgb(15, 23, 42)',
+      fontSize: defaultFontSize,
+      fontWeight: '400',
+      fontStyle: 'normal',
+      fontFamilyKey: 'sans-serif',
+      fontFamilyType: 'sans-serif',
+      fontFamilyCSS: FONT_FAMILIES['sans-serif'].css,
+      isBold: false,
+      isItalic: false,
+    },
+    originalStyle: null,
+    styleModified: true,
+    el: null,
+    panelEl: null,
+  };
+
+  const newIdx = state.words.length;
+  state.words.push(wordData);
+  state.lines.push({
+    text: 'New Text',
+    originalText: '',
+    wordIndices: [newIdx],
+    orientation: 'horizontal',
+  });
+
+  state.isAddingText = false;
+  DOM.btnAddText?.classList.remove('active');
+  if (DOM.canvasContainer) DOM.canvasContainer.style.cursor = '';
+
+  createVisualOverlay();
+  createSidePanelLines();
+  DOM.wordCount.textContent = `${state.words.length} words`;
+  renderAllModifiedWordsOnCanvas(DOM.mainCanvas);
+
+  setTimeout(() => {
+    const el = state.words[newIdx]?.el;
+    if (el) {
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, 60);
+}
+
 // ============================================================
 // Toolbar Events
 // ============================================================
@@ -1441,6 +2531,33 @@ function bindToolbarEvents() {
   if (DOM.sidePanelBackdrop) {
     DOM.sidePanelBackdrop.addEventListener('click', closeSidePanel);
   }
+
+  // Add Text Tool Button
+  DOM.btnAddText?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.isAddingText = !state.isAddingText;
+    DOM.btnAddText.classList.toggle('active', state.isAddingText);
+    if (state.isAddingText) {
+      if (DOM.canvasContainer) DOM.canvasContainer.style.cursor = 'crosshair';
+      showToast('Click anywhere on the document to place a new text box', 'info');
+    } else {
+      if (DOM.canvasContainer) DOM.canvasContainer.style.cursor = '';
+    }
+  });
+
+  // Click on canvas to place new text box when Add Text mode is active
+  DOM.canvasContainer?.addEventListener('click', (e) => {
+    if (!state.isAddingText) return;
+    if (e.target.closest('.word-box') || e.target.closest('#floatingWordToolbar')) return;
+
+    const rect = DOM.mainCanvas.getBoundingClientRect();
+    const scaleX = DOM.mainCanvas.width / rect.width;
+    const scaleY = DOM.mainCanvas.height / rect.height;
+    const canvasX = Math.round((e.clientX - rect.left) * scaleX);
+    const canvasY = Math.round((e.clientY - rect.top) * scaleY);
+
+    addNewTextBoxAt(canvasX, canvasY);
+  });
 
   // Zoom with scroll (Desktop)
   DOM.canvasViewport.addEventListener('wheel', (e) => {
@@ -1506,6 +2623,102 @@ function closeSidePanel() {
 }
 
 // ============================================================
+// Font Toolbar & Floating Controls Events
+// ============================================================
+function bindFontToolbarEvents() {
+  if (!DOM.fontToolbarGroup) return;
+
+  // Prevent blurring the active word when clicking toolbar controls
+  DOM.fontToolbarGroup.addEventListener('mousedown', (e) => {
+    if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+      e.preventDefault();
+    }
+  });
+
+  if (DOM.floatingWordToolbar) {
+    DOM.floatingWordToolbar.addEventListener('mousedown', (e) => {
+      if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+      }
+    });
+  }
+
+  // Top toolbar font family select
+  DOM.fontFamilySelect?.addEventListener('change', (e) => {
+    setActiveWordFontFamily(e.target.value);
+  });
+
+  // Floating toolbar font family select
+  DOM.floatingFontSelect?.addEventListener('change', (e) => {
+    setActiveWordFontFamily(e.target.value);
+  });
+
+  // Top toolbar font size buttons
+  DOM.btnFontSizeDec?.addEventListener('click', () => changeActiveWordFontSize(-1));
+  DOM.btnFontSizeInc?.addEventListener('click', () => changeActiveWordFontSize(1));
+
+  // Floating toolbar font size buttons
+  DOM.floatingBtnDec?.addEventListener('click', () => changeActiveWordFontSize(-1));
+  DOM.floatingBtnInc?.addEventListener('click', () => changeActiveWordFontSize(1));
+
+  // Font size input
+  DOM.fontSizeInput?.addEventListener('change', (e) => {
+    const val = parseFloat(e.target.value);
+    if (!isNaN(val) && val >= 6 && val <= 150) {
+      setActiveWordFontSize(val);
+    }
+  });
+
+  // Bold toggles
+  DOM.btnFontBold?.addEventListener('click', toggleActiveWordBold);
+  DOM.floatingBtnBold?.addEventListener('click', toggleActiveWordBold);
+
+  // Italic toggles
+  DOM.btnFontItalic?.addEventListener('click', toggleActiveWordItalic);
+  DOM.floatingBtnItalic?.addEventListener('click', toggleActiveWordItalic);
+
+  // Reset to original style
+  DOM.btnResetWordStyle?.addEventListener('click', resetActiveWordStyle);
+  DOM.floatingBtnReset?.addEventListener('click', resetActiveWordStyle);
+
+  // Shade Darker / Lighter toggles
+  DOM.btnShadeDarker?.addEventListener('click', () => adjustActiveWordDarkness(0.15));
+  DOM.btnShadeLighter?.addEventListener('click', () => adjustActiveWordDarkness(-0.15));
+  DOM.floatingBtnDarker?.addEventListener('click', () => adjustActiveWordDarkness(0.15));
+  DOM.floatingBtnLighter?.addEventListener('click', () => adjustActiveWordDarkness(-0.15));
+
+  // Custom text color picker
+  DOM.textColorPicker?.addEventListener('input', (e) => {
+    setActiveWordColor(e.target.value);
+  });
+  DOM.textColorPicker?.addEventListener('change', (e) => {
+    setActiveWordColor(e.target.value);
+  });
+
+  // Reposition floating toolbar on scroll or resize
+  DOM.canvasViewport?.addEventListener('scroll', () => {
+    if (state.activeWordIdx !== null) positionFloatingToolbar(state.activeWordIdx);
+  });
+
+  window.addEventListener('resize', () => {
+    if (state.activeWordIdx !== null) positionFloatingToolbar(state.activeWordIdx);
+  });
+
+  // Clicking outside words hides the floating toolbar
+  document.addEventListener('pointerdown', (e) => {
+    if (
+      !e.target.closest('.word-box') &&
+      !e.target.closest('#floatingWordToolbar') &&
+      !e.target.closest('#fontToolbarGroup')
+    ) {
+      hideFloatingToolbar();
+      state.activeWordIdx = null;
+      syncFontControls(null);
+    }
+  });
+}
+
+// ============================================================
 // Keyboard Shortcuts
 // ============================================================
 function bindKeyboardShortcuts() {
@@ -1547,9 +2760,36 @@ function bindKeyboardShortcuts() {
       zoomOut();
     }
 
-    // Escape = Blur active element
+    // Cmd/Ctrl + B = Bold (when word is active)
+    if (isMeta && (e.key === 'b' || e.key === 'B') && state.activeWordIdx !== null) {
+      e.preventDefault();
+      toggleActiveWordBold();
+    }
+
+    // Cmd/Ctrl + I = Italic (when word is active)
+    if (isMeta && (e.key === 'i' || e.key === 'I') && state.activeWordIdx !== null) {
+      e.preventDefault();
+      toggleActiveWordItalic();
+    }
+
+    // [ / ] font size shortcuts (with modifier or when editing)
+    if (state.activeWordIdx !== null && isMeta) {
+      if (e.key === '[' || e.key === '{') {
+        e.preventDefault();
+        changeActiveWordFontSize(-1);
+      }
+      if (e.key === ']' || e.key === '}') {
+        e.preventDefault();
+        changeActiveWordFontSize(1);
+      }
+    }
+
+    // Escape = Blur active element & hide toolbar
     if (e.key === 'Escape') {
       document.activeElement?.blur();
+      hideFloatingToolbar();
+      state.activeWordIdx = null;
+      syncFontControls(null);
     }
   });
 }

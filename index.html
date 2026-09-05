@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Edit text in PDFs and images directly in your browser. Upload, OCR, edit, and save — all client-side with no data leaving your device.">
   <title>DocEdit Pro — PDF & Image Text Editor</title>
-  <link rel="stylesheet" href="index.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css?v=5">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
 </head>
 <body>
@@ -161,6 +164,87 @@
           </button>
         </div>
 
+        <!-- Font & Formatting Controls -->
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-group font-toolbar-group" id="fontToolbarGroup">
+          <span class="toolbar-label">Font</span>
+          <!-- Font Style Select -->
+          <select class="toolbar-select font-family-select" id="fontFamilySelect" data-tooltip="Change Font Style" aria-label="Font Style">
+            <option value="sans-serif">Clean Sans (Arial / Standard)</option>
+            <option value="inter">Inter (Modern Sans)</option>
+            <option value="pos-thermal">POS Thermal (Chivo Mono)</option>
+            <option value="space-mono">Space Mono (Receipt Numbers)</option>
+            <option value="courier">Courier Prime (Typewriter / POS)</option>
+            <option value="dot-matrix">Dot Matrix / VT323</option>
+            <option value="serif">Times New Roman (Serif)</option>
+            <option value="monospace">Consolas / Code Mono</option>
+          </select>
+
+          <!-- Font Size Stepper -->
+          <div class="font-size-stepper" data-tooltip="Decrease / Increase Font Size">
+            <button class="btn btn-ghost btn-icon btn-stepper" id="btnFontSizeDec" title="Decrease Font Size ([)" aria-label="Decrease Font Size">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <input type="number" id="fontSizeInput" class="font-size-input" value="14" min="6" max="120" step="1" title="Font size in pixels" aria-label="Font Size in pixels">
+            <span class="font-size-unit">px</span>
+            <button class="btn btn-ghost btn-icon btn-stepper" id="btnFontSizeInc" title="Increase Font Size (])" aria-label="Increase Font Size">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+
+          <!-- Bold & Italic -->
+          <button class="btn btn-ghost btn-icon btn-format-toggle" id="btnFontBold" data-tooltip="Bold (⌘B)" aria-label="Toggle Bold">
+            <span class="format-letter-icon bold">B</span>
+          </button>
+          <button class="btn btn-ghost btn-icon btn-format-toggle" id="btnFontItalic" data-tooltip="Italic (⌘I)" aria-label="Toggle Italic">
+            <span class="format-letter-icon italic">I</span>
+          </button>
+
+          <!-- Reset / Match Original -->
+          <button class="btn btn-ghost btn-icon" id="btnResetWordStyle" data-tooltip="Reset to Detected Style & Shade" aria-label="Reset to detected style">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Character Darkness / Lightness (Ink Shade) -->
+          <div class="ink-shade-group" data-tooltip="Character Darkness & Lightness">
+            <span class="toolbar-label">Shade</span>
+            <button class="btn btn-ghost btn-icon btn-shade" id="btnShadeDarker" data-tooltip="Make Characters Darker" aria-label="Make Characters Darker">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>
+              </svg>
+            </button>
+            <span class="ink-shade-value" id="inkShadeValue" title="Darkness Level">100%</span>
+            <button class="btn btn-ghost btn-icon btn-shade" id="btnShadeLighter" data-tooltip="Make Characters Lighter" aria-label="Make Characters Lighter">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+              </svg>
+            </button>
+            <label class="color-picker-label" title="Custom Character Color">
+              <input type="color" id="textColorPicker" class="color-picker-input" value="#000000">
+              <span class="color-picker-swatch" id="colorPickerSwatch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Add Text Tool -->
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-group">
+          <button class="btn btn-ghost" id="btnAddText" data-tooltip="Click anywhere on the document to add new text box" aria-label="Add Text">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span style="font-size: 12px; font-weight: 500; margin-left: 2px;">+ Text</span>
+          </button>
+        </div>
+
         <div style="flex:1;"></div>
 
         <!-- Toggle side panel -->
@@ -182,6 +266,52 @@
           <div class="canvas-container" id="canvasContainer">
             <canvas id="mainCanvas"></canvas>
             <div class="text-overlay" id="textOverlay"></div>
+
+            <!-- Floating Word Quick Toolbar -->
+            <div class="floating-word-toolbar" id="floatingWordToolbar" style="display:none;">
+              <select class="floating-font-select" id="floatingFontSelect" title="Change Font Style">
+                <option value="sans-serif">Clean Sans</option>
+                <option value="inter">Inter</option>
+                <option value="pos-thermal">POS Thermal</option>
+                <option value="space-mono">Space Mono</option>
+                <option value="courier">Courier</option>
+                <option value="dot-matrix">Dot Matrix</option>
+                <option value="serif">Times Roman</option>
+                <option value="monospace">Consolas</option>
+              </select>
+              <div class="floating-divider"></div>
+              <button class="floating-btn" id="floatingBtnDec" title="Decrease Font Size ([)" aria-label="Decrease Font Size">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <span class="floating-size-badge" id="floatingSizeBadge" title="Current Font Size">14px</span>
+              <button class="floating-btn" id="floatingBtnInc" title="Increase Font Size (])" aria-label="Increase Font Size">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="floating-divider"></div>
+              <button class="floating-btn floating-format-btn" id="floatingBtnBold" title="Bold (⌘B)"><b>B</b></button>
+              <button class="floating-btn floating-format-btn" id="floatingBtnItalic" title="Italic (⌘I)"><i>I</i></button>
+              <div class="floating-divider"></div>
+              <!-- Floating Darker / Lighter -->
+              <button class="floating-btn" id="floatingBtnDarker" title="Darker Characters" aria-label="Darker">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>
+                </svg>
+              </button>
+              <span class="floating-shade-badge" id="floatingShadeBadge" title="Darkness Level">100%</span>
+              <button class="floating-btn" id="floatingBtnLighter" title="Lighter Characters" aria-label="Lighter">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"/>
+                  <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+                </svg>
+              </button>
+              <button class="floating-btn" id="floatingBtnReset" title="Reset to Detected Style & Shade" aria-label="Reset to original">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -240,7 +370,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 <!-- App -->
-<script src="app.js?v=4" type="module"></script>
+<script src="app.js?v=11" type="module"></script>
 <!-- Analytics Tracker -->
 <script src="tracker.js" defer></script>
 
