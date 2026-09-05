@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="receipt.css?v=14">
+  <link rel="stylesheet" href="receipt.css?v=15">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
 </head>
 <body>
@@ -435,6 +435,73 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Font Size Adjustment -->
+              <div class="size-control-card">
+                <div class="size-control-header">
+                  <label for="fontSizeSlider" class="size-label">
+                    <span class="icon">🔤</span> Receipt Font Size
+                  </label>
+                  <div class="stepper-group">
+                    <button type="button" class="btn-stepper" id="btnFontDec" title="Decrease Font Size" aria-label="Decrease Font Size">−</button>
+                    <span class="size-value-badge" id="fontSizeBadge">17px</span>
+                    <button type="button" class="btn-stepper" id="btnFontInc" title="Increase Font Size" aria-label="Increase Font Size">+</button>
+                  </div>
+                </div>
+                <div class="size-slider-row">
+                  <input type="range" id="fontSizeSlider" min="12" max="24" step="1" value="17" class="size-slider">
+                </div>
+                <div class="preset-pills-row">
+                  <span class="preset-label">Presets:</span>
+                  <button type="button" class="preset-pill" data-size-target="font" data-size-val="14">Small (14px)</button>
+                  <button type="button" class="preset-pill active" data-size-target="font" data-size-val="17">Standard (17px)</button>
+                  <button type="button" class="preset-pill" data-size-target="font" data-size-val="20">Large (20px)</button>
+                </div>
+              </div>
+
+              <!-- Logo Sizing & Custom Logo -->
+              <div class="size-control-card">
+                <div class="size-control-header">
+                  <label for="logoSizeSlider" class="size-label">
+                    <span class="icon">🖼️</span> Receipt Logo Size
+                  </label>
+                  <div class="stepper-group">
+                    <button type="button" class="btn-stepper" id="btnLogoDec" title="Decrease Logo Size" aria-label="Decrease Logo Size">−</button>
+                    <span class="size-value-badge" id="logoSizeBadge">170px</span>
+                    <button type="button" class="btn-stepper" id="btnLogoInc" title="Increase Logo Size" aria-label="Increase Logo Size">+</button>
+                  </div>
+                </div>
+                <div class="size-slider-row">
+                  <input type="range" id="logoSizeSlider" min="80" max="280" step="5" value="170" class="size-slider">
+                </div>
+                <div class="preset-pills-row">
+                  <span class="preset-label">Presets:</span>
+                  <button type="button" class="preset-pill" data-size-target="logo" data-size-val="120">Compact (120px)</button>
+                  <button type="button" class="preset-pill active" data-size-target="logo" data-size-val="170">Standard (170px)</button>
+                  <button type="button" class="preset-pill" data-size-target="logo" data-size-val="230">Enlarged (230px)</button>
+                </div>
+
+                <!-- Logo Visibility & Custom Upload -->
+                <div class="logo-extra-row">
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="showReceiptLogo" checked>
+                    <span class="checkmark"></span>
+                    <span>Show Logo on Receipt</span>
+                  </label>
+                  <div class="custom-logo-actions">
+                    <label for="customLogoInput" class="btn-custom-logo" title="Upload custom receipt logo">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                      Upload Logo
+                    </label>
+                    <input type="file" id="customLogoInput" accept="image/*" style="display:none;">
+                    <button type="button" class="btn-input-action" id="btnResetLogo" title="Reset to template brand logo" style="display:none;">↺</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -450,6 +517,23 @@
         <div class="export-actions-title">
           <span class="pulse-dot"></span> Live Thermal Preview
         </div>
+
+        <!-- Quick Size Steppers on Toolbar -->
+        <div class="preview-quick-adjustments">
+          <div class="quick-adjust-group" title="Adjust Receipt Font Size">
+            <span class="quick-adjust-label">Font</span>
+            <button type="button" class="quick-adjust-btn" id="btnQuickFontDec" aria-label="Decrease Font Size">−</button>
+            <span class="quick-adjust-badge" id="quickFontBadge">17px</span>
+            <button type="button" class="quick-adjust-btn" id="btnQuickFontInc" aria-label="Increase Font Size">+</button>
+          </div>
+          <div class="quick-adjust-group" title="Adjust Receipt Logo Size">
+            <span class="quick-adjust-label">Logo</span>
+            <button type="button" class="quick-adjust-btn" id="btnQuickLogoDec" aria-label="Decrease Logo Size">−</button>
+            <span class="quick-adjust-badge" id="quickLogoBadge">170px</span>
+            <button type="button" class="quick-adjust-btn" id="btnQuickLogoInc" aria-label="Increase Logo Size">+</button>
+          </div>
+        </div>
+
         <div class="export-buttons">
           <button class="btn btn-export btn-pdf" id="btnDownloadPDF">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -578,7 +662,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- App Logic -->
-<script src="receipt.js?v=7"></script>
+<script src="receipt.js?v=8"></script>
 <!-- Analytics Tracker -->
 <script src="tracker.js" defer></script>
 

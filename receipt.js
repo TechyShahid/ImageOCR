@@ -121,16 +121,16 @@
   // --- Logos Matching Real Thermal Receipts ---
   const LOGOS = {
     indianoil: `
-      <img src="assets/indianoil_logo.png?v=3" class="receipt-logo-img" alt="IndianOil" style="width: 170px; height: auto;">
+      <img src="assets/indianoil_logo.png?v=3" class="receipt-logo-img" alt="IndianOil">
     `,
     bharat: `
-      <img src="assets/bharat_petroleum_logo.png?v=3" class="receipt-logo-img" alt="Bharat Petroleum" style="width: 170px; height: auto;">
+      <img src="assets/bharat_petroleum_logo.png?v=3" class="receipt-logo-img" alt="Bharat Petroleum">
     `,
     hpcl: `
-      <img src="assets/hpcl_logo.png?v=3" class="receipt-logo-img" alt="Hindustan Petroleum" style="width: 170px; height: auto;">
+      <img src="assets/hpcl_logo.png?v=3" class="receipt-logo-img" alt="Hindustan Petroleum">
     `,
     custom: `
-      <svg viewBox="0 0 160 65" xmlns="http://www.w3.org/2000/svg" class="receipt-logo-svg" style="width: 240px; height: auto;">
+      <svg viewBox="0 0 160 65" xmlns="http://www.w3.org/2000/svg" class="receipt-logo-svg">
         <rect x="15" y="8" width="130" height="48" rx="4" fill="none" stroke="#111111" stroke-width="2.5"/>
         <text x="80" y="40" font-family="'Inter', Arial, sans-serif" font-size="17" font-weight="800" text-anchor="middle" fill="#111111">⛽ FUEL RECEIPT</text>
       </svg>
@@ -183,6 +183,38 @@
   const elPrintIntensity = document.getElementById('printIntensity');
   const elJaggedEdges = document.getElementById('jaggedEdges');
 
+  // Font & Logo Size controls
+  const btnFontDec = document.getElementById('btnFontDec');
+  const btnFontInc = document.getElementById('btnFontInc');
+  const fontSizeBadge = document.getElementById('fontSizeBadge');
+  const fontSizeSlider = document.getElementById('fontSizeSlider');
+
+  const btnLogoDec = document.getElementById('btnLogoDec');
+  const btnLogoInc = document.getElementById('btnLogoInc');
+  const logoSizeBadge = document.getElementById('logoSizeBadge');
+  const logoSizeSlider = document.getElementById('logoSizeSlider');
+
+  const showReceiptLogo = document.getElementById('showReceiptLogo');
+  const customLogoInput = document.getElementById('customLogoInput');
+  const btnResetLogo = document.getElementById('btnResetLogo');
+
+  // Preview Toolbar Quick Steppers
+  const btnQuickFontDec = document.getElementById('btnQuickFontDec');
+  const btnQuickFontInc = document.getElementById('btnQuickFontInc');
+  const quickFontBadge = document.getElementById('quickFontBadge');
+
+  const btnQuickLogoDec = document.getElementById('btnQuickLogoDec');
+  const btnQuickLogoInc = document.getElementById('btnQuickLogoInc');
+  const quickLogoBadge = document.getElementById('quickLogoBadge');
+
+  const presetPills = document.querySelectorAll('.preset-pill');
+
+  // State
+  let receiptFontSize = 17; // px (12 to 24)
+  let receiptLogoWidth = 170; // px (80 to 280)
+  let isLogoVisible = true;
+  let customLogoDataUrl = null;
+
   // UI sections
   const densityRow = document.getElementById('densityRow');
   const totalizerRow = document.getElementById('totalizerRow');
@@ -222,6 +254,8 @@
     initDefaultDates();
     setupAccordions();
     setupEventListeners();
+    setFontSize(17);
+    setLogoSize(170);
     applyTemplate('indianoil');
   }
 
@@ -356,7 +390,11 @@
     const amtFormatted = isZeroPadded ? padThermalZero(amtVal, 5, 2) : amtVal.toFixed(2);
 
     // 1. Logo
-    elLogoArea.innerHTML = LOGOS[currentTemplateKey] || LOGOS.indianoil;
+    if (customLogoDataUrl) {
+      elLogoArea.innerHTML = `<img src="${customLogoDataUrl}" class="receipt-logo-img" alt="Custom Station Logo">`;
+    } else {
+      elLogoArea.innerHTML = LOGOS[currentTemplateKey] || LOGOS.indianoil;
+    }
 
     // 2. Station Header
     elRDealerName.textContent = (elDealerName.value || '').toUpperCase();
@@ -456,7 +494,11 @@
   }
 
   function updateVisualStyles() {
-    // Paper tone
+    // Apply font size and logo width as CSS custom variables
+    receiptPaper.style.setProperty('--receipt-font-size', `${receiptFontSize}px`);
+    receiptPaper.style.setProperty('--receipt-logo-width', `${receiptLogoWidth}px`);
+
+    // Paper tone & font style
     receiptPaper.className = `receipt-paper font-${elFontStyle.value} tone-${elPaperTone.value}`;
 
     // Print ink opacity
@@ -467,6 +509,49 @@
     const showJagged = elJaggedEdges.checked;
     topJagged.style.display = showJagged ? 'block' : 'none';
     bottomJagged.style.display = showJagged ? 'block' : 'none';
+
+    // Logo visibility
+    if (elLogoArea) {
+      if (isLogoVisible) {
+        elLogoArea.classList.remove('hidden');
+      } else {
+        elLogoArea.classList.add('hidden');
+      }
+    }
+  }
+
+  function setFontSize(newSize, triggerSource) {
+    const size = Math.max(12, Math.min(24, parseInt(newSize, 10) || 17));
+    receiptFontSize = size;
+
+    if (fontSizeSlider && triggerSource !== 'slider') fontSizeSlider.value = size;
+    if (fontSizeBadge) fontSizeBadge.textContent = `${size}px`;
+    if (quickFontBadge) quickFontBadge.textContent = `${size}px`;
+
+    presetPills.forEach(pill => {
+      if (pill.dataset.sizeTarget === 'font') {
+        pill.classList.toggle('active', parseInt(pill.dataset.sizeVal, 10) === size);
+      }
+    });
+
+    updateVisualStyles();
+  }
+
+  function setLogoSize(newWidth, triggerSource) {
+    const width = Math.max(80, Math.min(280, parseInt(newWidth, 10) || 170));
+    receiptLogoWidth = width;
+
+    if (logoSizeSlider && triggerSource !== 'slider') logoSizeSlider.value = width;
+    if (logoSizeBadge) logoSizeBadge.textContent = `${width}px`;
+    if (quickLogoBadge) quickLogoBadge.textContent = `${width}px`;
+
+    presetPills.forEach(pill => {
+      if (pill.dataset.sizeTarget === 'logo') {
+        pill.classList.toggle('active', parseInt(pill.dataset.sizeVal, 10) === width);
+      }
+    });
+
+    updateVisualStyles();
   }
 
   function escapeHtml(str) {
@@ -567,10 +652,90 @@
       showToast('Set to current date & time', 'success');
     });
 
+    // Font Size Steppers & Slider
+    if (btnFontDec) btnFontDec.addEventListener('click', () => setFontSize(receiptFontSize - 1));
+    if (btnFontInc) btnFontInc.addEventListener('click', () => setFontSize(receiptFontSize + 1));
+    if (fontSizeSlider) fontSizeSlider.addEventListener('input', (e) => setFontSize(e.target.value, 'slider'));
+
+    // Quick Font adjustments on Preview Toolbar
+    if (btnQuickFontDec) btnQuickFontDec.addEventListener('click', () => setFontSize(receiptFontSize - 1));
+    if (btnQuickFontInc) btnQuickFontInc.addEventListener('click', () => setFontSize(receiptFontSize + 1));
+
+    // Logo Size Steppers & Slider
+    if (btnLogoDec) btnLogoDec.addEventListener('click', () => setLogoSize(receiptLogoWidth - 10));
+    if (btnLogoInc) btnLogoInc.addEventListener('click', () => setLogoSize(receiptLogoWidth + 10));
+    if (logoSizeSlider) logoSizeSlider.addEventListener('input', (e) => setLogoSize(e.target.value, 'slider'));
+
+    // Quick Logo adjustments on Preview Toolbar
+    if (btnQuickLogoDec) btnQuickLogoDec.addEventListener('click', () => setLogoSize(receiptLogoWidth - 10));
+    if (btnQuickLogoInc) btnQuickLogoInc.addEventListener('click', () => setLogoSize(receiptLogoWidth + 10));
+
+    // Preset pills for Font and Logo
+    presetPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const target = pill.dataset.sizeTarget;
+        const val = parseInt(pill.dataset.sizeVal, 10);
+        if (target === 'font') {
+          setFontSize(val);
+        } else if (target === 'logo') {
+          setLogoSize(val);
+        }
+      });
+    });
+
+    // Show/Hide Logo toggle
+    if (showReceiptLogo) {
+      showReceiptLogo.addEventListener('change', () => {
+        isLogoVisible = showReceiptLogo.checked;
+        updateVisualStyles();
+        showToast(isLogoVisible ? 'Logo visible on receipt' : 'Logo hidden from receipt', 'success');
+      });
+    }
+
+    // Custom Logo File Input
+    if (customLogoInput) {
+      customLogoInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file (PNG, JPG, SVG)', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          customLogoDataUrl = event.target.result;
+          if (btnResetLogo) btnResetLogo.style.display = 'inline-flex';
+          renderReceipt();
+          showToast('Custom logo uploaded successfully!', 'success');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Reset Custom Logo
+    if (btnResetLogo) {
+      btnResetLogo.addEventListener('click', () => {
+        customLogoDataUrl = null;
+        if (customLogoInput) customLogoInput.value = '';
+        btnResetLogo.style.display = 'none';
+        renderReceipt();
+        showToast('Reset to template brand logo', 'success');
+      });
+    }
+
     // Reset button
     btnReset.addEventListener('click', () => {
+      setFontSize(17);
+      setLogoSize(170);
+      isLogoVisible = true;
+      if (showReceiptLogo) showReceiptLogo.checked = true;
+      customLogoDataUrl = null;
+      if (customLogoInput) customLogoInput.value = '';
+      if (btnResetLogo) btnResetLogo.style.display = 'none';
       applyTemplate(currentTemplateKey);
-      showToast('Form reset to default', 'success');
+      showToast('Form and styling reset to default', 'success');
     });
 
     // Randomize sample data
