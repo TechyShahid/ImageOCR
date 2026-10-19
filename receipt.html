@@ -1,670 +1,730 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Generate authentic fuel receipts for IndianOil, Bharat Petroleum, HPCL, and more. Customize details with auto-calculations and export to PDF or high-resolution images.">
+  <meta name="description"
+    content="Generate authentic fuel receipts for IndianOil, Bharat Petroleum, HPCL, and more. Customize details with auto-calculations and export to PDF or high-resolution images.">
   <title>Fuel Receipt Generator — IndianOil, BPCL, HPCL & More</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="receipt.css?v=15">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=DotGothic16&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@700;900&family=Roboto+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="receipt.css?v=16">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
 </head>
+
 <body>
 
-<div id="app" class="app-layout">
-  <!-- ===== Header ===== -->
-  <header class="app-header">
-    <div class="header-left">
-      <div class="app-logo">
-        <div class="logo-icon">⛽</div>
-        <div>
-          <h1>Fuel Receipt Generator</h1>
-          <span class="sub-badge">Thermal POS Edition</span>
+  <div id="app" class="app-layout">
+    <!-- ===== Header ===== -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-logo">
+          <div class="logo-icon">⛽</div>
+          <div>
+            <h1>Fuel Receipt Generator</h1>
+            <span class="sub-badge">Thermal POS Edition</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Navigation Switcher -->
-    <nav class="app-nav">
-      <a href="index.html" class="nav-tab">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        PDF / Image Editor
-      </a>
-      <a href="receipt.html" class="nav-tab active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
-          <line x1="8" y1="7" x2="16" y2="7"/>
-          <line x1="8" y1="11" x2="16" y2="11"/>
-          <line x1="8" y1="15" x2="12" y2="15"/>
-        </svg>
-        Receipt Generator
-      </a>
-    </nav>
+      <!-- Navigation Switcher -->
+      <nav class="app-nav">
+        <a href="index.html" class="nav-tab">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          PDF / Image Editor
+        </a>
+        <a href="receipt.html" class="nav-tab active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+            <line x1="8" y1="7" x2="16" y2="7" />
+            <line x1="8" y1="11" x2="16" y2="11" />
+            <line x1="8" y1="15" x2="12" y2="15" />
+          </svg>
+          Receipt Generator
+        </a>
+      </nav>
 
-    <!-- Header Actions -->
-    <div class="header-actions">
-      <button class="btn btn-ghost" id="btnRandomize" title="Fill with Sample Values">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-        </svg>
-        <span>Sample Data</span>
-      </button>
-      <button class="btn btn-ghost" id="btnReset" title="Reset Form">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-        </svg>
-        <span>Reset</span>
-      </button>
-    </div>
-  </header>
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="btnRandomize" title="Fill with Sample Values">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+          </svg>
+          <span>Sample Data</span>
+        </button>
+        <button class="btn btn-ghost" id="btnReset" title="Reset Form">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          <span>Reset</span>
+        </button>
+      </div>
+    </header>
 
-  <!-- ===== Main Grid ===== -->
-  <main class="main-container">
-    
-    <!-- LEFT: Form Configuration -->
-    <section class="form-pane">
-      <div class="form-card">
-        
-        <!-- Brand / Template Selector -->
-        <div class="form-section">
-          <label class="section-title">
-            <span class="icon">🏷️</span> Choose Brand / Template
-          </label>
-          <div class="template-selector">
-            <button type="button" class="tpl-btn active" data-template="indianoil">
-              <span class="tpl-icon">🔴</span>
-              <div class="tpl-info">
-                <span class="tpl-name">IndianOil</span>
-                <span class="tpl-desc">Sample 1 Match (Inv.No / Atot / Vtot)</span>
-              </div>
-            </button>
-            <button type="button" class="tpl-btn" data-template="bharat">
-              <span class="tpl-icon">🔵</span>
-              <div class="tpl-info">
-                <span class="tpl-name">Bharat Petroleum</span>
-                <span class="tpl-desc">Sample 2 Match (Density / Local ID)</span>
-              </div>
-            </button>
-            <button type="button" class="tpl-btn" data-template="hpcl">
-              <span class="tpl-icon">🟡</span>
-              <div class="tpl-info">
-                <span class="tpl-name">HPCL</span>
-                <span class="tpl-desc">Hindustan Petroleum Format</span>
-              </div>
-            </button>
-            <button type="button" class="tpl-btn" data-template="custom">
-              <span class="tpl-icon">⚪</span>
-              <div class="tpl-info">
-                <span class="tpl-name">Generic / Custom</span>
-                <span class="tpl-desc">Universal Fuel Receipt</span>
-              </div>
-            </button>
-          </div>
-        </div>
+    <!-- ===== Main Grid ===== -->
+    <main class="main-container">
 
-        <form id="receiptForm" onsubmit="return false;">
+      <!-- LEFT: Form Configuration -->
+      <section class="form-pane">
+        <div class="form-card">
 
-          <!-- Fuel Station Details -->
-          <div class="accordion-item open">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">🏪</span> Petrol Pump / Station Info
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-group">
-                <label for="dealerName">Dealer / Station Name</label>
-                <input type="text" id="dealerName" value="BAHADUR SHETH FUEL" placeholder="e.g. BAHADUR SHETH FUEL">
-              </div>
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="addressLine1">Address Line 1</label>
-                  <input type="text" id="addressLine1" value="KARAUNDHI DEORIA" placeholder="e.g. KARAUNDHI DEORIA">
+          <!-- Brand / Template Selector -->
+          <div class="form-section">
+            <label class="section-title">
+              <span class="icon">🏷️</span> Choose Brand / Template
+            </label>
+            <div class="template-selector">
+              <button type="button" class="tpl-btn active" data-template="indianoil">
+                <span class="tpl-icon">🔴</span>
+                <div class="tpl-info">
+                  <span class="tpl-name">IndianOil</span>
+                  <span class="tpl-desc">Sample 1 Match (Inv.No / Atot / Vtot)</span>
                 </div>
-                <div class="input-group">
-                  <label for="addressLine2">Address Line 2 (Optional)</label>
-                  <input type="text" id="addressLine2" value="" placeholder="e.g. CHANDAULI">
+              </button>
+              <button type="button" class="tpl-btn" data-template="bharat">
+                <span class="tpl-icon">🔵</span>
+                <div class="tpl-info">
+                  <span class="tpl-name">Bharat Petroleum</span>
+                  <span class="tpl-desc">Sample 2 Match (Density / Local ID)</span>
                 </div>
-              </div>
-              <div class="input-group">
-                <label for="telNo">Telephone / Contact No.</label>
-                <input type="text" id="telNo" value="9869005844" placeholder="e.g. 9869005844">
-              </div>
+              </button>
+              <button type="button" class="tpl-btn" data-template="hpcl">
+                <span class="tpl-icon">🟡</span>
+                <div class="tpl-info">
+                  <span class="tpl-name">HPCL</span>
+                  <span class="tpl-desc">Hindustan Petroleum Format</span>
+                </div>
+              </button>
+              <button type="button" class="tpl-btn" data-template="custom">
+                <span class="tpl-icon">⚪</span>
+                <div class="tpl-info">
+                  <span class="tpl-name">Generic / Custom</span>
+                  <span class="tpl-desc">Universal Fuel Receipt</span>
+                </div>
+              </button>
             </div>
           </div>
 
-          <!-- Transaction & Dispenser Numbers -->
-          <div class="accordion-item open">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">🧾</span> Transaction & Dispenser Details
+          <form id="receiptForm" onsubmit="return false;">
+
+            <!-- Fuel Station Details -->
+            <div class="accordion-item open">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">🏪</span> Petrol Pump / Station Info
+                </div>
+                <span class="accordion-arrow">▾</span>
               </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-row">
-                <div class="input-group" id="invNoGroup">
-                  <label for="invNo">Invoice / Receipt No.</label>
-                  <div class="input-with-action">
-                    <input type="text" id="invNo" value="232903226H208288">
-                    <button type="button" class="btn-input-action" id="btnGenInv" title="Generate New Number">🎲</button>
+              <div class="accordion-content">
+                <div class="input-group">
+                  <label for="dealerName">Dealer / Station Name</label>
+                  <input type="text" id="dealerName" value="BAHADUR SHETH FUEL" placeholder="e.g. BAHADUR SHETH FUEL">
+                </div>
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="addressLine1">Address Line 1</label>
+                    <input type="text" id="addressLine1" value="KARAUNDHI DEORIA" placeholder="e.g. KARAUNDHI DEORIA">
                   </div>
-                </div>
-                <div class="input-group" id="fccGroup">
-                  <label for="fccId" id="fccLabel">FCC ID / Local ID</label>
-                  <input type="text" id="fccId" value="300420727">
-                </div>
-              </div>
-
-              <div class="input-row-3">
-                <div class="input-group">
-                  <label for="fipNo">FIP No.</label>
-                  <input type="text" id="fipNo" value="02">
-                </div>
-                <div class="input-group">
-                  <label for="nozzleNo">Nozzle No.</label>
-                  <input type="text" id="nozzleNo" value="02">
-                </div>
-                <div class="input-group">
-                  <label for="product">Product / Fuel</label>
-                  <input type="text" id="product" list="productList" value="Petrol">
-                  <datalist id="productList">
-                    <option value="Petrol">
-                    <option value="Diesel">
-                    <option value="Xtra Prem">
-                    <option value="XP95">
-                    <option value="Power">
-                    <option value="Speed">
-                    <option value="CNG">
-                  </datalist>
-                </div>
-              </div>
-
-              <!-- Brand-specific fields (Density for BPCL, Atot/Vtot for IOCL) -->
-              <div class="input-row" id="densityRow" style="display: none;">
-                <div class="input-group">
-                  <label for="density">Density (BPCL)</label>
-                  <input type="text" id="density" value="743.3Kg/Cu.mtr" placeholder="e.g. 743.3Kg/Cu.mtr">
-                </div>
-              </div>
-
-              <div class="input-row" id="totalizerRow">
-                <div class="input-group">
-                  <label for="atot">Atot (Amount Totalizer)</label>
-                  <input type="text" id="atot" value="00081384546.13">
-                </div>
-                <div class="input-group">
-                  <label for="vtot">Vtot (Volume Totalizer)</label>
-                  <input type="text" id="vtot" value="0000854181.980">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pricing & Auto Calculations -->
-          <div class="accordion-item open">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">💰</span> Pricing & Quantities (Auto-Calculated)
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="calc-helper-banner">
-                <span>⚡ Rate × Volume = Amount (edit any field to auto-sync)</span>
-              </div>
-              
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="presetType">Preset Type</label>
-                  <select id="presetType">
-                    <option value="Volume" selected>Volume</option>
-                    <option value="Amount">Amount</option>
-                    <option value="Normal">Normal</option>
-                  </select>
-                </div>
-                <div class="input-group">
-                  <label for="rate">Rate (₹/L)</label>
-                  <div class="input-prefix-wrapper">
-                    <span class="input-prefix">₹</span>
-                    <input type="number" step="0.01" id="rate" value="101.74">
-                  </div>
-                </div>
-              </div>
-
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="volume">Volume (Litres)</label>
-                  <div class="input-prefix-wrapper">
-                    <input type="number" step="0.01" id="volume" value="41.78">
-                    <span class="input-suffix">L</span>
+                  <div class="input-group">
+                    <label for="addressLine2">Address Line 2 (Optional)</label>
+                    <input type="text" id="addressLine2" value="" placeholder="e.g. CHANDAULI">
                   </div>
                 </div>
                 <div class="input-group">
-                  <label for="amount">Total Amount (₹)</label>
-                  <div class="input-prefix-wrapper highlight">
-                    <span class="input-prefix">₹</span>
-                    <input type="number" step="0.01" id="amount" value="4250.70">
+                  <label for="telNo">Telephone / Contact No.</label>
+                  <input type="text" id="telNo" value="9869005844" placeholder="e.g. 9869005844">
+                </div>
+              </div>
+            </div>
+
+            <!-- Transaction & Dispenser Numbers -->
+            <div class="accordion-item open">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">🧾</span> Transaction & Dispenser Details
+                </div>
+                <span class="accordion-arrow">▾</span>
+              </div>
+              <div class="accordion-content">
+                <div class="input-row">
+                  <div class="input-group" id="invNoGroup">
+                    <label for="invNo">Invoice / Receipt No.</label>
+                    <div class="input-with-action">
+                      <input type="text" id="invNo" value="232903226H208288">
+                      <button type="button" class="btn-input-action" id="btnGenInv"
+                        title="Generate New Number">🎲</button>
+                    </div>
+                  </div>
+                  <div class="input-group" id="fccGroup">
+                    <label for="fccId" id="fccLabel">FCC ID / Local ID</label>
+                    <input type="text" id="fccId" value="300420727">
                   </div>
                 </div>
-              </div>
 
-              <div class="checkbox-row">
-                <label class="custom-checkbox">
-                  <input type="checkbox" id="padZeros" checked>
-                  <span class="checkmark"></span>
-                  <span>Pad with thermal POS leading zeros (e.g. <code>00041.78</code> / <code>04250.70</code>)</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Vehicle & Customer Details -->
-          <div class="accordion-item open">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">🚗</span> Vehicle & Customer Details
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="vehicleNo">Vehicle Number</label>
-                  <input type="text" id="vehicleNo" value="BR01JZ0007" placeholder="e.g. BR01JZ0007 / DL01AB1234">
+                <div class="input-row-3">
+                  <div class="input-group">
+                    <label for="fipNo">FIP No.</label>
+                    <input type="text" id="fipNo" value="02">
+                  </div>
+                  <div class="input-group">
+                    <label for="nozzleNo">Nozzle No.</label>
+                    <input type="text" id="nozzleNo" value="02">
+                  </div>
+                  <div class="input-group">
+                    <label for="product">Product / Fuel</label>
+                    <input type="text" id="product" list="productList" value="Petrol">
+                    <datalist id="productList">
+                      <option value="Petrol">
+                      <option value="Diesel">
+                      <option value="Xtra Prem">
+                      <option value="XP95">
+                      <option value="Power">
+                      <option value="Speed">
+                      <option value="CNG">
+                    </datalist>
+                  </div>
                 </div>
-                <div class="input-group">
-                  <label for="mobileNo">Customer Mobile No.</label>
-                  <div class="input-with-action">
-                    <input type="text" id="mobileNo" value="Not Entered" placeholder="10 digits or Not Entered">
-                    <button type="button" class="btn-input-action" id="btnToggleMobile" title="Set to 'Not Entered'">🚫</button>
+
+                <!-- Brand-specific fields (Density for BPCL, Atot/Vtot for IOCL) -->
+                <div class="input-row" id="densityRow" style="display: none;">
+                  <div class="input-group">
+                    <label for="density">Density (BPCL)</label>
+                    <input type="text" id="density" value="743.3Kg/Cu.mtr" placeholder="e.g. 743.3Kg/Cu.mtr">
+                  </div>
+                </div>
+
+                <div class="input-row" id="totalizerRow">
+                  <div class="input-group">
+                    <label for="atot">Atot (Amount Totalizer)</label>
+                    <input type="text" id="atot" value="00081384546.13">
+                  </div>
+                  <div class="input-group">
+                    <label for="vtot">Vtot (Volume Totalizer)</label>
+                    <input type="text" id="vtot" value="0000854181.980">
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Date & Time -->
-          <div class="accordion-item open">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">🕒</span> Date & Time
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="receiptDate">Transaction Date (DD/MM/YY)</label>
-                  <input type="date" id="receiptDate">
+            <!-- Pricing & Auto Calculations -->
+            <div class="accordion-item open">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">💰</span> Pricing & Quantities (Auto-Calculated)
                 </div>
-                <div class="input-group">
-                  <label for="receiptTime">Transaction Time (HH:MM)</label>
-                  <input type="time" id="receiptTime">
-                </div>
+                <span class="accordion-arrow">▾</span>
               </div>
+              <div class="accordion-content">
+                <div class="calc-helper-banner">
+                  <span>⚡ Rate × Volume = Amount (edit any field to auto-sync)</span>
+                </div>
 
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="printTimeOffset">"Printed On" Time Offset</label>
-                  <select id="printTimeOffset">
-                    <option value="1" selected>+1 Minute (Standard POS)</option>
-                    <option value="0">Same as Transaction Time</option>
-                    <option value="2">+2 Minutes</option>
-                    <option value="custom">Custom Printed Date/Time</option>
-                  </select>
-                </div>
-                <div class="input-group" style="align-self: flex-end;">
-                  <button type="button" class="btn btn-secondary w-100" id="btnSetCurrentDateTime">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    Set Current Date & Time
-                  </button>
-                </div>
-              </div>
-
-              <div class="input-row" id="customPrintRow" style="display: none;">
-                <div class="input-group">
-                  <label for="customPrintDate">Custom Print Date</label>
-                  <input type="date" id="customPrintDate">
-                </div>
-                <div class="input-group">
-                  <label for="customPrintTime">Custom Print Time</label>
-                  <input type="time" id="customPrintTime">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tax, Statutory & Extra Details -->
-          <div class="accordion-item">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">⚖️</span> Tax & Attendant Details (Optional)
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-row-3">
-                <div class="input-group">
-                  <label for="cstNo">CST No.</label>
-                  <input type="text" id="cstNo" value="" placeholder="Optional">
-                </div>
-                <div class="input-group">
-                  <label for="lstNo">LST No.</label>
-                  <input type="text" id="lstNo" value="" placeholder="Optional">
-                </div>
-                <div class="input-group">
-                  <label for="vatNo">VAT No.</label>
-                  <input type="text" id="vatNo" value="" placeholder="Optional">
-                </div>
-              </div>
-
-              <div class="input-row" id="bpclExtraRow" style="display: none;">
-                <div class="input-group">
-                  <label for="attendantId">Attendant ID</label>
-                  <input type="text" id="attendantId" value="Not Available">
-                </div>
-                <div class="input-group">
-                  <label for="fccDate">FCC Date / Time</label>
-                  <input type="text" id="fccDate" value="Not Available">
-                </div>
-              </div>
-
-              <div class="input-group">
-                <label for="footerMessage">Footer Message</label>
-                <input type="text" id="footerMessage" value="Thank You! Please Visit Again..">
-              </div>
-            </div>
-          </div>
-
-          <!-- Thermal Paper Visual Customization -->
-          <div class="accordion-item">
-            <div class="accordion-header">
-              <div class="accordion-title">
-                <span class="icon">🎨</span> Thermal Paper & Print Styling
-              </div>
-              <span class="accordion-arrow">▾</span>
-            </div>
-            <div class="accordion-content">
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="paperTone">Paper Tone</label>
-                  <select id="paperTone">
-                    <option value="authentic" selected>Realistic Thermal Paper (Warm Off-white)</option>
-                    <option value="fresh">Crisp White Paper</option>
-                    <option value="aged">Vintage / Aged Paper</option>
-                  </select>
-                </div>
-                <div class="input-group">
-                  <label for="fontStyle">Printer Font Style</label>
-                  <select id="fontStyle">
-                    <option value="chivo-mono" selected>POS Thermal (Clean Zero - Sample Match)</option>
-                    <option value="space-mono">Space Mono</option>
-                    <option value="courier">Courier Prime (Typewriter/POS)</option>
-                    <option value="dot-matrix">Dot Matrix / VT323</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="printIntensity">Print Darkness / Ink</label>
-                  <input type="range" id="printIntensity" min="60" max="100" value="92">
-                </div>
-                <div class="input-group">
-                  <label>Paper Style</label>
-                  <div class="checkbox-row" style="margin-top: 8px;">
-                    <label class="custom-checkbox">
-                      <input type="checkbox" id="jaggedEdges" checked>
-                      <span class="checkmark"></span>
-                      <span>Serrated Torn Edges</span>
-                    </label>
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="presetType">Preset Type</label>
+                    <select id="presetType">
+                      <option value="Volume" selected>Volume</option>
+                      <option value="Amount">Amount</option>
+                      <option value="Normal">Normal</option>
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <label for="rate">Rate (₹/L)</label>
+                    <div class="input-prefix-wrapper">
+                      <span class="input-prefix">₹</span>
+                      <input type="number" step="0.01" id="rate" value="101.74">
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Font Size Adjustment -->
-              <div class="size-control-card">
-                <div class="size-control-header">
-                  <label for="fontSizeSlider" class="size-label">
-                    <span class="icon">🔤</span> Receipt Font Size
-                  </label>
-                  <div class="stepper-group">
-                    <button type="button" class="btn-stepper" id="btnFontDec" title="Decrease Font Size" aria-label="Decrease Font Size">−</button>
-                    <span class="size-value-badge" id="fontSizeBadge">17px</span>
-                    <button type="button" class="btn-stepper" id="btnFontInc" title="Increase Font Size" aria-label="Increase Font Size">+</button>
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="volume">Volume (Litres)</label>
+                    <div class="input-prefix-wrapper">
+                      <input type="number" step="0.01" id="volume" value="41.78">
+                      <span class="input-suffix">L</span>
+                    </div>
+                  </div>
+                  <div class="input-group">
+                    <label for="amount">Total Amount (₹)</label>
+                    <div class="input-prefix-wrapper highlight">
+                      <span class="input-prefix">₹</span>
+                      <input type="number" step="0.01" id="amount" value="4250.70">
+                    </div>
                   </div>
                 </div>
-                <div class="size-slider-row">
-                  <input type="range" id="fontSizeSlider" min="12" max="24" step="1" value="17" class="size-slider">
-                </div>
-                <div class="preset-pills-row">
-                  <span class="preset-label">Presets:</span>
-                  <button type="button" class="preset-pill" data-size-target="font" data-size-val="14">Small (14px)</button>
-                  <button type="button" class="preset-pill active" data-size-target="font" data-size-val="17">Standard (17px)</button>
-                  <button type="button" class="preset-pill" data-size-target="font" data-size-val="20">Large (20px)</button>
-                </div>
-              </div>
 
-              <!-- Logo Sizing & Custom Logo -->
-              <div class="size-control-card">
-                <div class="size-control-header">
-                  <label for="logoSizeSlider" class="size-label">
-                    <span class="icon">🖼️</span> Receipt Logo Size
-                  </label>
-                  <div class="stepper-group">
-                    <button type="button" class="btn-stepper" id="btnLogoDec" title="Decrease Logo Size" aria-label="Decrease Logo Size">−</button>
-                    <span class="size-value-badge" id="logoSizeBadge">170px</span>
-                    <button type="button" class="btn-stepper" id="btnLogoInc" title="Increase Logo Size" aria-label="Increase Logo Size">+</button>
-                  </div>
-                </div>
-                <div class="size-slider-row">
-                  <input type="range" id="logoSizeSlider" min="80" max="280" step="5" value="170" class="size-slider">
-                </div>
-                <div class="preset-pills-row">
-                  <span class="preset-label">Presets:</span>
-                  <button type="button" class="preset-pill" data-size-target="logo" data-size-val="120">Compact (120px)</button>
-                  <button type="button" class="preset-pill active" data-size-target="logo" data-size-val="170">Standard (170px)</button>
-                  <button type="button" class="preset-pill" data-size-target="logo" data-size-val="230">Enlarged (230px)</button>
-                </div>
-
-                <!-- Logo Visibility & Custom Upload -->
-                <div class="logo-extra-row">
+                <div class="checkbox-row">
                   <label class="custom-checkbox">
-                    <input type="checkbox" id="showReceiptLogo" checked>
+                    <input type="checkbox" id="padZeros" checked>
                     <span class="checkmark"></span>
-                    <span>Show Logo on Receipt</span>
+                    <span>Pad with thermal POS leading zeros (e.g. <code>00041.78</code> / <code>04250.70</code>)</span>
                   </label>
-                  <div class="custom-logo-actions">
-                    <label for="customLogoInput" class="btn-custom-logo" title="Upload custom receipt logo">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                      </svg>
-                      Upload Logo
-                    </label>
-                    <input type="file" id="customLogoInput" accept="image/*" style="display:none;">
-                    <button type="button" class="btn-input-action" id="btnResetLogo" title="Reset to template brand logo" style="display:none;">↺</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vehicle & Customer Details -->
+            <div class="accordion-item open">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">🚗</span> Vehicle & Customer Details
+                </div>
+                <span class="accordion-arrow">▾</span>
+              </div>
+              <div class="accordion-content">
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="vehicleNo">Vehicle Number</label>
+                    <input type="text" id="vehicleNo" value="BR01JZ0007" placeholder="e.g. BR01JZ0007 / DL01AB1234">
+                  </div>
+                  <div class="input-group">
+                    <label for="mobileNo">Customer Mobile No.</label>
+                    <div class="input-with-action">
+                      <input type="text" id="mobileNo" value="Not Entered" placeholder="10 digits or Not Entered">
+                      <button type="button" class="btn-input-action" id="btnToggleMobile"
+                        title="Set to 'Not Entered'">🚫</button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-        </form>
-      </div>
-    </section>
+            <!-- Date & Time -->
+            <div class="accordion-item open">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">🕒</span> Date & Time
+                </div>
+                <span class="accordion-arrow">▾</span>
+              </div>
+              <div class="accordion-content">
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="receiptDate">Transaction Date (DD/MM/YY)</label>
+                    <input type="date" id="receiptDate">
+                  </div>
+                  <div class="input-group">
+                    <label for="receiptTime">Transaction Time (HH:MM)</label>
+                    <input type="time" id="receiptTime">
+                  </div>
+                </div>
 
-    <!-- RIGHT: Live Thermal Receipt Preview & Download -->
-    <section class="preview-pane">
-      
-      <!-- Export Bar -->
-      <div class="export-toolbar">
-        <div class="export-actions-title">
-          <span class="pulse-dot"></span> Live Thermal Preview
-        </div>
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="printTimeOffset">"Printed On" Time Offset</label>
+                    <select id="printTimeOffset">
+                      <option value="1" selected>+1 Minute (Standard POS)</option>
+                      <option value="0">Same as Transaction Time</option>
+                      <option value="2">+2 Minutes</option>
+                      <option value="custom">Custom Printed Date/Time</option>
+                    </select>
+                  </div>
+                  <div class="input-group" style="align-self: flex-end;">
+                    <button type="button" class="btn btn-secondary w-100" id="btnSetCurrentDateTime">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      Set Current Date & Time
+                    </button>
+                  </div>
+                </div>
 
-        <!-- Quick Size Steppers on Toolbar -->
-        <div class="preview-quick-adjustments">
-          <div class="quick-adjust-group" title="Adjust Receipt Font Size">
-            <span class="quick-adjust-label">Font</span>
-            <button type="button" class="quick-adjust-btn" id="btnQuickFontDec" aria-label="Decrease Font Size">−</button>
-            <span class="quick-adjust-badge" id="quickFontBadge">17px</span>
-            <button type="button" class="quick-adjust-btn" id="btnQuickFontInc" aria-label="Increase Font Size">+</button>
-          </div>
-          <div class="quick-adjust-group" title="Adjust Receipt Logo Size">
-            <span class="quick-adjust-label">Logo</span>
-            <button type="button" class="quick-adjust-btn" id="btnQuickLogoDec" aria-label="Decrease Logo Size">−</button>
-            <span class="quick-adjust-badge" id="quickLogoBadge">170px</span>
-            <button type="button" class="quick-adjust-btn" id="btnQuickLogoInc" aria-label="Increase Logo Size">+</button>
-          </div>
-        </div>
-
-        <div class="export-buttons">
-          <button class="btn btn-export btn-pdf" id="btnDownloadPDF">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-            Download PDF
-          </button>
-          <button class="btn btn-export btn-png" id="btnDownloadPNG">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            Download Image (PNG)
-          </button>
-          <button class="btn btn-ghost btn-icon" id="btnPrint" title="Print Receipt">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Receipt Canvas Viewport -->
-      <div class="receipt-viewport" id="receiptViewport">
-        
-        <!-- Thermal Receipt Container -->
-        <div class="receipt-wrapper" id="receiptWrapper">
-          
-          <!-- Top Jagged Edge -->
-          <div class="jagged-edge top" id="topJagged"></div>
-
-          <!-- Receipt Paper Body -->
-          <div class="receipt-paper font-chivo-mono tone-authentic" id="receiptPaper">
-            
-            <!-- BRAND LOGO AREA -->
-            <div class="receipt-logo-container" id="receiptLogoArea">
-              <!-- Rendered dynamically based on brand -->
-            </div>
-
-            <!-- SUBHEADER -->
-            <div class="receipt-welcomes" id="receiptWelcomes">
-              Welcomes You
-            </div>
-
-            <!-- STATION HEADER -->
-            <div class="receipt-station-info">
-              <div class="r-dealer-name" id="rDealerName">BAHADUR SHETH FUEL</div>
-              <div class="r-address-1" id="rAddress1">KARAUNDHI DEORIA</div>
-              <div class="r-address-2" id="rAddress2" style="display:none;"></div>
-              <div class="r-tel-no" id="rTelNo">Tel. No.: 9869005844</div>
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- TRANSACTION & META SECTION -->
-            <div class="receipt-meta" id="receiptMeta">
-              <!-- Content rendered based on template -->
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- PRICING & AMOUNT SECTION -->
-            <div class="receipt-pricing" id="receiptPricing">
-              <!-- Content rendered based on template -->
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- VEHICLE & CUSTOMER SECTION -->
-            <div class="receipt-vehicle" id="receiptVehicle">
-              <div class="r-row" id="rVehicleRow">Vehicle No: BR01JZ0007</div>
-              <div class="r-row" id="rMobileRow">Mobile No : Not Entered</div>
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- DATE & TIME -->
-            <div class="receipt-datetime" id="receiptDateTime">
-              <!-- Dynamic format based on template -->
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- TAX & STATUTORY -->
-            <div class="receipt-tax" id="receiptTax">
-              <!-- CST, LST, VAT, Attendant -->
-            </div>
-
-            <div class="receipt-divider-space"></div>
-
-            <!-- FOOTER -->
-            <div class="receipt-footer">
-              <div class="r-footer-msg" id="rFooterMsg">Thank You! Please Visit Again..</div>
-              <div class="r-printed-block" id="rPrintedBlock">
-                <div class="r-printed-lbl" id="rPrintedLbl">Printed on:</div>
-                <div class="r-printed-val" id="rPrintedVal">21/08/26 19:59</div>
+                <div class="input-row" id="customPrintRow" style="display: none;">
+                  <div class="input-group">
+                    <label for="customPrintDate">Custom Print Date</label>
+                    <input type="date" id="customPrintDate">
+                  </div>
+                  <div class="input-group">
+                    <label for="customPrintTime">Custom Print Time</label>
+                    <input type="time" id="customPrintTime">
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- Tax, Statutory & Extra Details -->
+            <div class="accordion-item">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">⚖️</span> Tax & Attendant Details (Optional)
+                </div>
+                <span class="accordion-arrow">▾</span>
+              </div>
+              <div class="accordion-content">
+                <div class="input-row-3">
+                  <div class="input-group">
+                    <label for="cstNo">CST No.</label>
+                    <input type="text" id="cstNo" value="" placeholder="Optional">
+                  </div>
+                  <div class="input-group">
+                    <label for="lstNo">LST No.</label>
+                    <input type="text" id="lstNo" value="" placeholder="Optional">
+                  </div>
+                  <div class="input-group">
+                    <label for="vatNo">VAT No.</label>
+                    <input type="text" id="vatNo" value="" placeholder="Optional">
+                  </div>
+                </div>
+
+                <div class="input-row" id="bpclExtraRow" style="display: none;">
+                  <div class="input-group">
+                    <label for="attendantId">Attendant ID</label>
+                    <input type="text" id="attendantId" value="Not Available">
+                  </div>
+                  <div class="input-group">
+                    <label for="fccDate">FCC Date / Time</label>
+                    <input type="text" id="fccDate" value="Not Available">
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label for="footerMessage">Footer Message</label>
+                  <input type="text" id="footerMessage" value="Thank You! Please Visit Again..">
+                </div>
+              </div>
+            </div>
+
+            <!-- Thermal Paper Visual Customization -->
+            <div class="accordion-item">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <span class="icon">🎨</span> Thermal Paper & Print Styling
+                </div>
+                <span class="accordion-arrow">▾</span>
+              </div>
+              <div class="accordion-content">
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="paperTone">Paper Tone</label>
+                    <select id="paperTone">
+                      <option value="authentic" selected>Realistic Thermal Paper (Warm Off-white)</option>
+                      <option value="fresh">Crisp White Paper</option>
+                      <option value="aged">Vintage / Aged Paper</option>
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <div class="label-with-action">
+                      <label for="fontStyle">Printer Font Style</label>
+                      <button type="button" class="btn-upload-font-link" id="btnUploadFontTrigger"
+                        title="Load custom TTF/OTF font file (e.g. pixFueler or bitMatrix)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Load .TTF/.OTF</span>
+                      </button>
+                      <input type="file" id="customFontInput" accept=".ttf,.otf,.woff,.woff2" style="display:none">
+                    </div>
+                    <select id="fontStyle">
+                      <optgroup label="🖨️ bitMatrix Series (POS &amp; Retail Dot-Matrix)">
+                        <option value="bitmatrix-d1">bitMatrix-D1 (Standard POS Dot-Matrix)</option>
+                        <option value="bitmatrix-a4">bitMatrix-A4 (Fuel Center Matrix)</option>
+                        <option value="bitmatrix-a1">bitMatrix-A1 (Classic 9-Pin Dot-Matrix)</option>
+                        <option value="bitmatrix-b1">bitMatrix-B1 (High-Density Matrix)</option>
+                      </optgroup>
+                      <optgroup label="📄 Standard Thermal &amp; Monospace Fonts">
+                        <option value="chivo-mono">POS Thermal (Clean Zero - Chivo Mono)</option>
+                        <option value="share-tech-mono">OCR-B Style (Share Tech Mono)</option>
+                        <option value="roboto-mono">Roboto Mono (Clean Modern)</option>
+                        <option value="dotgothic">DotGothic16 (Hardware 16×16 Matrix)</option>
+                        <option value="dot-matrix">VT323 (Retro Dot Matrix)</option>
+                        <option value="space-mono">Space Mono</option>
+                        <option value="courier">Courier Prime (Typewriter/POS)</option>
+                      </optgroup>
+                    </select>
+                    <div class="custom-font-loaded-banner" id="customFontBanner" style="display: none;">
+                      <div class="font-file-title">
+                        <span>✓ Font:</span>
+                        <strong id="customFontTitle">custom.ttf</strong>
+                      </div>
+                      <button type="button" class="btn-remove-custom-font" id="btnRemoveCustomFont"
+                        title="Remove custom font">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="input-row">
+                  <div class="input-group">
+                    <label for="printIntensity">Print Darkness / Ink</label>
+                    <input type="range" id="printIntensity" min="60" max="100" value="92">
+                  </div>
+                  <div class="input-group">
+                    <label>Paper Style</label>
+                    <div class="checkbox-row" style="margin-top: 8px;">
+                      <label class="custom-checkbox">
+                        <input type="checkbox" id="jaggedEdges" checked>
+                        <span class="checkmark"></span>
+                        <span>Serrated Torn Edges</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Font Size Adjustment -->
+                <div class="size-control-card">
+                  <div class="size-control-header">
+                    <label for="fontSizeSlider" class="size-label">
+                      <span class="icon">🔤</span> Receipt Font Size
+                    </label>
+                    <div class="stepper-group">
+                      <button type="button" class="btn-stepper" id="btnFontDec" title="Decrease Font Size"
+                        aria-label="Decrease Font Size">−</button>
+                      <span class="size-value-badge" id="fontSizeBadge">17px</span>
+                      <button type="button" class="btn-stepper" id="btnFontInc" title="Increase Font Size"
+                        aria-label="Increase Font Size">+</button>
+                    </div>
+                  </div>
+                  <div class="size-slider-row">
+                    <input type="range" id="fontSizeSlider" min="12" max="24" step="1" value="17" class="size-slider">
+                  </div>
+                  <div class="preset-pills-row">
+                    <span class="preset-label">Presets:</span>
+                    <button type="button" class="preset-pill" data-size-target="font" data-size-val="14">Small
+                      (14px)</button>
+                    <button type="button" class="preset-pill active" data-size-target="font" data-size-val="17">Standard
+                      (17px)</button>
+                    <button type="button" class="preset-pill" data-size-target="font" data-size-val="20">Large
+                      (20px)</button>
+                  </div>
+                </div>
+
+                <!-- Logo Sizing & Custom Logo -->
+                <div class="size-control-card">
+                  <div class="size-control-header">
+                    <label for="logoSizeSlider" class="size-label">
+                      <span class="icon">🖼️</span> Receipt Logo Size
+                    </label>
+                    <div class="stepper-group">
+                      <button type="button" class="btn-stepper" id="btnLogoDec" title="Decrease Logo Size"
+                        aria-label="Decrease Logo Size">−</button>
+                      <span class="size-value-badge" id="logoSizeBadge">170px</span>
+                      <button type="button" class="btn-stepper" id="btnLogoInc" title="Increase Logo Size"
+                        aria-label="Increase Logo Size">+</button>
+                    </div>
+                  </div>
+                  <div class="size-slider-row">
+                    <input type="range" id="logoSizeSlider" min="80" max="280" step="5" value="170" class="size-slider">
+                  </div>
+                  <div class="preset-pills-row">
+                    <span class="preset-label">Presets:</span>
+                    <button type="button" class="preset-pill" data-size-target="logo" data-size-val="120">Compact
+                      (120px)</button>
+                    <button type="button" class="preset-pill active" data-size-target="logo"
+                      data-size-val="170">Standard (170px)</button>
+                    <button type="button" class="preset-pill" data-size-target="logo" data-size-val="230">Enlarged
+                      (230px)</button>
+                  </div>
+
+                  <!-- Logo Visibility & Custom Upload -->
+                  <div class="logo-extra-row">
+                    <label class="custom-checkbox">
+                      <input type="checkbox" id="showReceiptLogo" checked>
+                      <span class="checkmark"></span>
+                      <span>Show Logo on Receipt</span>
+                    </label>
+                    <div class="custom-logo-actions">
+                      <label for="customLogoInput" class="btn-custom-logo" title="Upload custom receipt logo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Upload Logo
+                      </label>
+                      <input type="file" id="customLogoInput" accept="image/*" style="display:none;">
+                      <button type="button" class="btn-input-action" id="btnResetLogo"
+                        title="Reset to template brand logo" style="display:none;">↺</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- RIGHT: Live Thermal Receipt Preview & Download -->
+      <section class="preview-pane">
+
+        <!-- Export Bar -->
+        <div class="export-toolbar">
+          <div class="export-actions-title">
+            <span class="pulse-dot"></span> Live Thermal Preview
           </div>
 
-          <!-- Bottom Jagged Edge -->
-          <div class="jagged-edge bottom" id="bottomJagged"></div>
+          <!-- Quick Size Steppers on Toolbar -->
+          <div class="preview-quick-adjustments">
+            <div class="quick-adjust-group" title="Adjust Receipt Font Size">
+              <span class="quick-adjust-label">Font</span>
+              <button type="button" class="quick-adjust-btn" id="btnQuickFontDec"
+                aria-label="Decrease Font Size">−</button>
+              <span class="quick-adjust-badge" id="quickFontBadge">17px</span>
+              <button type="button" class="quick-adjust-btn" id="btnQuickFontInc"
+                aria-label="Increase Font Size">+</button>
+            </div>
+            <div class="quick-adjust-group" title="Adjust Receipt Logo Size">
+              <span class="quick-adjust-label">Logo</span>
+              <button type="button" class="quick-adjust-btn" id="btnQuickLogoDec"
+                aria-label="Decrease Logo Size">−</button>
+              <span class="quick-adjust-badge" id="quickLogoBadge">170px</span>
+              <button type="button" class="quick-adjust-btn" id="btnQuickLogoInc"
+                aria-label="Increase Logo Size">+</button>
+            </div>
+          </div>
+
+          <div class="export-buttons">
+            <button class="btn btn-export btn-pdf" id="btnDownloadPDF">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+              Download PDF
+            </button>
+            <button class="btn btn-export btn-png" id="btnDownloadPNG">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              Download Image (PNG)
+            </button>
+            <button class="btn btn-ghost btn-icon" id="btnPrint" title="Print Receipt">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Receipt Canvas Viewport -->
+        <div class="receipt-viewport" id="receiptViewport">
+
+          <!-- Thermal Receipt Container -->
+          <div class="receipt-wrapper" id="receiptWrapper">
+
+            <!-- Top Jagged Edge -->
+            <div class="jagged-edge top" id="topJagged"></div>
+
+            <!-- Receipt Paper Body -->
+            <div class="receipt-paper font-chivo-mono tone-authentic" id="receiptPaper">
+
+              <!-- BRAND LOGO AREA -->
+              <div class="receipt-logo-container" id="receiptLogoArea">
+                <!-- Rendered dynamically based on brand -->
+              </div>
+
+              <!-- SUBHEADER -->
+              <div class="receipt-welcomes" id="receiptWelcomes">
+                Welcomes You
+              </div>
+
+              <!-- STATION HEADER -->
+              <div class="receipt-station-info">
+                <div class="r-dealer-name" id="rDealerName">BAHADUR SHETH FUEL</div>
+                <div class="r-address-1" id="rAddress1">KARAUNDHI DEORIA</div>
+                <div class="r-address-2" id="rAddress2" style="display:none;"></div>
+                <div class="r-tel-no" id="rTelNo">Tel. No.: 9869005844</div>
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- TRANSACTION & META SECTION -->
+              <div class="receipt-meta" id="receiptMeta">
+                <!-- Content rendered based on template -->
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- PRICING & AMOUNT SECTION -->
+              <div class="receipt-pricing" id="receiptPricing">
+                <!-- Content rendered based on template -->
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- VEHICLE & CUSTOMER SECTION -->
+              <div class="receipt-vehicle" id="receiptVehicle">
+                <div class="r-row" id="rVehicleRow">Vehicle No: BR01JZ0007</div>
+                <div class="r-row" id="rMobileRow">Mobile No : Not Entered</div>
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- DATE & TIME -->
+              <div class="receipt-datetime" id="receiptDateTime">
+                <!-- Dynamic format based on template -->
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- TAX & STATUTORY -->
+              <div class="receipt-tax" id="receiptTax">
+                <!-- CST, LST, VAT, Attendant -->
+              </div>
+
+              <div class="receipt-divider-space"></div>
+
+              <!-- FOOTER -->
+              <div class="receipt-footer">
+                <div class="r-footer-msg" id="rFooterMsg">Thank You! Please Visit Again..</div>
+                <div class="r-printed-block" id="rPrintedBlock">
+                  <div class="r-printed-lbl" id="rPrintedLbl">Printed on:</div>
+                  <div class="r-printed-val" id="rPrintedVal">21/08/26 19:59</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bottom Jagged Edge -->
+            <div class="jagged-edge bottom" id="bottomJagged"></div>
+
+          </div>
 
         </div>
 
-      </div>
+      </section>
 
-    </section>
+    </main>
 
-  </main>
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  </div>
 
-</div>
+  <!-- External Libraries for Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- External Libraries for Export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<!-- App Logic -->
-<script src="receipt.js?v=8"></script>
-<!-- Analytics Tracker -->
-<script src="tracker.js" defer></script>
+  <!-- App Logic -->
+  <script src="receipt.js?v=8"></script>
+  <!-- Analytics Tracker -->
+  <script src="tracker.js" defer></script>
 
 </body>
+
 </html>

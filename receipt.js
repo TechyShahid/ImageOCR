@@ -198,6 +198,67 @@
   const customLogoInput = document.getElementById('customLogoInput');
   const btnResetLogo = document.getElementById('btnResetLogo');
 
+  // Custom Font Controls
+  const customFontInput = document.getElementById('customFontInput');
+  const btnUploadFontTrigger = document.getElementById('btnUploadFontTrigger');
+  const customFontBanner = document.getElementById('customFontBanner');
+  const customFontTitle = document.getElementById('customFontTitle');
+  const btnRemoveCustomFont = document.getElementById('btnRemoveCustomFont');
+  let loadedCustomFontFamily = null;
+  let loadedCustomFontName = null;
+
+  // IndexedDB helper for caching custom fonts
+  const DB_NAME = 'ReceiptFontCache';
+  const STORE_NAME = 'fonts';
+
+  function openFontDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveFontToCache(name, buffer) {
+    try {
+      const db = await openFontDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put({ id: 'activeFont', name, buffer });
+    } catch (e) {
+      console.warn('Could not cache font in IndexedDB:', e);
+    }
+  }
+
+  async function loadFontFromCache() {
+    try {
+      const db = await openFontDB();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get('activeFont');
+      return new Promise((resolve) => {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function clearFontFromCache() {
+    try {
+      const db = await openFontDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete('activeFont');
+    } catch (e) {
+      console.warn('Could not clear font cache:', e);
+    }
+  }
+
   // Preview Toolbar Quick Steppers
   const btnQuickFontDec = document.getElementById('btnQuickFontDec');
   const btnQuickFontInc = document.getElementById('btnQuickFontInc');
@@ -250,13 +311,14 @@
   const btnSetCurrentDateTime = document.getElementById('btnSetCurrentDateTime');
 
   // --- Initial Setup ---
-  function init() {
+  async function init() {
     initDefaultDates();
     setupAccordions();
     setupEventListeners();
     setFontSize(17);
     setLogoSize(170);
     applyTemplate('indianoil');
+    await restoreSavedCustomFont();
   }
 
   function initDefaultDates() {
@@ -499,7 +561,12 @@
     receiptPaper.style.setProperty('--receipt-logo-width', `${receiptLogoWidth}px`);
 
     // Paper tone & font style
-    receiptPaper.className = `receipt-paper font-${elFontStyle.value} tone-${elPaperTone.value}`;
+    if (elFontStyle.value === 'custom' && loadedCustomFontFamily) {
+      receiptPaper.className = `receipt-paper font-custom tone-${elPaperTone.value}`;
+      receiptPaper.style.setProperty('--custom-font-name', `'${loadedCustomFontFamily}'`);
+    } else {
+      receiptPaper.className = `receipt-paper font-${elFontStyle.value} tone-${elPaperTone.value}`;
+    }
 
     // Print ink opacity
     const inkVal = parseInt(elPrintIntensity.value, 10) / 100;
@@ -517,6 +584,93 @@
       } else {
         elLogoArea.classList.add('hidden');
       }
+    }
+  }
+
+  async function applyCustomFontFile(fileName, buffer, shouldSave = false) {
+    const cleanName = fileName.replace(/\.[^/.]+$/, '').trim();
+    const familyName = 'CustomFont_' + cleanName.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    try {
+      const fontFace = new FontFace(familyName, buffer);
+      await fontFace.load();
+      document.fonts.add(fontFace);
+
+      // Register aliases if filename matches pixFueler or bitMatrix
+      const lower = cleanName.toLowerCase();
+      if (lower.includes('pixfueler')) {
+        ['pixFueler-IN', 'pixFueler-A', 'pixFueler-A-narrow', 'pixFueler-B', 'pixFueler-C', 'pixFueler-D'].forEach(alias => {
+          try {
+            document.fonts.add(new FontFace(alias, buffer));
+          } catch (e) {}
+        });
+      } else if (lower.includes('bitmatrix')) {
+        ['bitMatrix-D1', 'bitMatrix-A4', 'bitMatrix-A1', 'bitMatrix-B1'].forEach(alias => {
+          try {
+            document.fonts.add(new FontFace(alias, buffer));
+          } catch (e) {}
+        });
+      }
+
+      loadedCustomFontFamily = familyName;
+      loadedCustomFontName = fileName;
+
+      // Update banner UI
+      if (customFontBanner && customFontTitle) {
+        customFontTitle.textContent = fileName;
+        customFontBanner.style.display = 'flex';
+      }
+
+      // Add custom option to dropdown
+      let optGroup = document.getElementById('customFontOptGroup');
+      if (!optGroup) {
+        optGroup = document.createElement('optgroup');
+        optGroup.id = 'customFontOptGroup';
+        optGroup.label = '⭐ User Loaded Font';
+        const opt = document.createElement('option');
+        opt.value = 'custom';
+        optGroup.appendChild(opt);
+        elFontStyle.insertBefore(optGroup, elFontStyle.firstChild);
+      }
+      const opt = optGroup.querySelector('option[value="custom"]');
+      if (opt) {
+        opt.textContent = `${cleanName} (Custom Loaded)`;
+      }
+
+      elFontStyle.value = 'custom';
+      updateVisualStyles();
+
+      if (shouldSave) {
+        await saveFontToCache(fileName, buffer);
+      }
+    } catch (err) {
+      console.error('Error loading font:', err);
+      throw err;
+    }
+  }
+
+  async function removeCustomFontFile() {
+    loadedCustomFontFamily = null;
+    loadedCustomFontName = null;
+    if (customFontInput) customFontInput.value = '';
+    if (customFontBanner) customFontBanner.style.display = 'none';
+
+    const optGroup = document.getElementById('customFontOptGroup');
+    if (optGroup) optGroup.remove();
+
+    elFontStyle.value = 'pixfueler-in';
+    updateVisualStyles();
+    await clearFontFromCache();
+  }
+
+  async function restoreSavedCustomFont() {
+    try {
+      const cached = await loadFontFromCache();
+      if (cached && cached.name && cached.buffer) {
+        await applyCustomFontFile(cached.name, cached.buffer, false);
+      }
+    } catch (e) {
+      console.warn('Could not restore cached font:', e);
     }
   }
 
@@ -616,6 +770,14 @@
     });
 
     form.addEventListener('change', renderReceipt);
+
+    if (elFontStyle) {
+      elFontStyle.addEventListener('change', () => {
+        updateVisualStyles();
+        const selectedText = elFontStyle.options[elFontStyle.selectedIndex]?.text || elFontStyle.value;
+        showToast(`Font: ${selectedText.split('(')[0].trim()}`, 'info');
+      });
+    }
 
     // Custom print offset toggle
     elPrintOffset.addEventListener('change', () => {
@@ -725,6 +887,45 @@
       });
     }
 
+    // Custom Font File Upload Trigger
+    if (btnUploadFontTrigger && customFontInput) {
+      btnUploadFontTrigger.addEventListener('click', () => {
+        customFontInput.click();
+      });
+    }
+
+    // Custom Font File Selected
+    if (customFontInput) {
+      customFontInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const validExts = ['.ttf', '.otf', '.woff', '.woff2'];
+        const lowerName = file.name.toLowerCase();
+        if (!validExts.some(ext => lowerName.endsWith(ext))) {
+          showToast('Please select a valid font file (.ttf, .otf, .woff, .woff2)', 'error');
+          return;
+        }
+
+        try {
+          const buffer = await file.arrayBuffer();
+          await applyCustomFontFile(file.name, buffer, true);
+          showToast(`Successfully loaded: ${file.name}`, 'success');
+        } catch (err) {
+          console.error(err);
+          showToast(`Could not load font: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    // Remove Custom Font
+    if (btnRemoveCustomFont) {
+      btnRemoveCustomFont.addEventListener('click', async () => {
+        await removeCustomFontFile();
+        showToast('Removed custom font. Restored standard printer font.', 'info');
+      });
+    }
+
     // Reset button
     btnReset.addEventListener('click', () => {
       setFontSize(17);
@@ -734,6 +935,7 @@
       customLogoDataUrl = null;
       if (customLogoInput) customLogoInput.value = '';
       if (btnResetLogo) btnResetLogo.style.display = 'none';
+      elFontStyle.value = 'pixfueler-in';
       applyTemplate(currentTemplateKey);
       showToast('Form and styling reset to default', 'success');
     });
